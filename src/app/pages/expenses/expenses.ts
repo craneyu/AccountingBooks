@@ -100,19 +100,20 @@ export class ExpensesComponent {
       });
     } else {
       const htmlContent = `
-        <div class="relative group w-full h-full">
-          <div class="gallery-container w-full h-full">
+        <div class="gallery-wrapper">
+          <div class="gallery-container">
             ${images.map((url, i) => `
-              <div class="snap-center">
-                <img src="${url}" class="max-w-[95vw] max-h-[75vh] object-contain shadow-2xl rounded-lg">
-                <div class="mt-6 text-white/90 text-base font-bold bg-black/30 px-4 py-1 rounded-full backdrop-blur-sm">
+              <div class="snap-center p-4">
+                <img src="${url}" class="max-w-full max-h-[70vh] object-contain shadow-2xl rounded-lg">
+                <div class="mt-6 text-white text-lg font-bold bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
                   ${i + 1} / ${images.length}
                 </div>
               </div>
             `).join('')}
           </div>
-          <div class="absolute bottom-20 left-0 right-0 flex justify-center pointer-events-none md:hidden">
-             <div class="bg-black/60 text-white px-4 py-2 rounded-full text-sm animate-pulse border border-white/20 backdrop-blur-md">
+          <!-- Swipe Hint -->
+          <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none md:hidden">
+             <div class="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce border-2 border-white/20">
                ⬅ 左右滑動切換照片 ➡
              </div>
           </div>
@@ -123,14 +124,14 @@ export class ExpensesComponent {
         html: htmlContent,
         showConfirmButton: false,
         showCloseButton: true,
-        width: '100%',
+        width: '100vw',
         padding: '0',
         background: 'transparent',
         customClass: {
-          popup: '!bg-transparent shadow-none w-full max-w-4xl',
-          htmlContainer: '!m-0 !p-0 overflow-hidden'
+          popup: '!bg-transparent shadow-none !w-screen !max-w-none',
+          htmlContainer: '!m-0 !p-0 !overflow-visible'
         },
-        backdrop: `rgba(0,0,0,0.9)`
+        backdrop: `rgba(0,0,0,0.95)`
       });
     }
   }
