@@ -1,0 +1,113 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+  <div class="soft-card w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col relative animate-scale-in">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-text">{{ expense ? '編輯支出' : '新增支出' }}</h2>
+      <button (click)="cancel()" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger transition-colors">
+        <fa-icon [icon]="faTimes"></fa-icon>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      
+      <!-- Item -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">項目</label>
+        <input type="text" formControlName="item" class="soft-input" placeholder="例如：晚餐、計程車">
+      </div>
+
+      <!-- Date -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">日期</label>
+        <input type="date" formControlName="expenseDate" class="soft-input">
+      </div>
+
+      <!-- Amount & Currency -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">金額</label>
+          <input type="number" formControlName="amount" class="soft-input" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">幣別</label>
+          <select formControlName="currency" class="soft-select">
+            <option *ngFor="let c of currencies" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Rate & TWD -->
+      <div class="bg-gray-50/50 p-3 rounded-xl border border-white/40">
+        <div class="flex items-center justify-between text-xs text-text-light mb-2">
+          <span class="flex items-center gap-1">
+             匯率 (1 {{ form.get('currency')?.value }} = TWD)
+             <fa-icon [icon]="faSpinner" class="animate-spin" *ngIf="rateLoading"></fa-icon>
+          </span>
+          <button type="button" (click)="fetchRate(form.get('currency')?.value)" class="hover:text-primary">
+            <fa-icon [icon]="faSync"></fa-icon> 更新匯率
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+           <input type="number" formControlName="exchangeRate" class="bg-transparent border-b border-gray-300 focus:border-primary outline-none py-1 text-sm">
+           <div class="text-right font-bold text-text">
+             ≈ TWD {{ form.get('amountInTWD')?.value | number:'1.0-0' }}
+           </div>
+        </div>
+      </div>
+
+      <!-- Category & Method -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">類別</label>
+          <select formControlName="category" class="soft-select">
+            <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">支付方式</label>
+          <select formControlName="paymentMethod" class="soft-select">
+            <option *ngFor="let p of paymentMethods" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Receipt Image -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">收據 / 照片</label>
+        <div class="flex items-center gap-4">
+           <button type="button" (click)="fileInput.click()" class="soft-btn text-sm py-2 px-3 bg-gray-100 flex items-center gap-2">
+             <fa-icon [icon]="faCamera"></fa-icon> <span>{{ previewUrl ? '更換照片' : '新增照片' }}</span>
+           </button>
+           <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden">
+           <span *ngIf="selectedFile" class="text-xs text-text-light truncate max-w-[150px]">{{ selectedFile.name }}</span>
+        </div>
+        
+        <div *ngIf="previewUrl" class="mt-3 relative rounded-xl overflow-hidden shadow-soft-inset max-h-40 w-full bg-gray-100">
+           <img [src]="previewUrl" class="w-full h-full object-contain">
+           <button type="button" (click)="previewUrl = null; selectedFile = null" class="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-500">
+             <fa-icon [icon]="faTimes" size="sm"></fa-icon>
+           </button>
+        </div>
+      </div>
+
+      <!-- Note -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">備註</label>
+        <textarea formControlName="note" rows="2" class="soft-input"></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-4">
+        <button type="button" (click)="cancel()" class="soft-btn flex-1 bg-gray-200">取消</button>
+        <button type="submit" [disabled]="form.invalid || loading" class="soft-btn soft-btn-primary flex-1">
+          <span *ngIf="!loading">{{ expense ? '更新' : '新增' }}</span>
+          <span *ngIf="loading"><fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon></span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

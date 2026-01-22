@@ -1,0 +1,23 @@
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="soft-card w-full max-w-md flex flex-col items-center text-center space-y-8 animate-fade-in-up">
+    <div class="space-y-2">
+      <h1 class="text-3xl font-bold text-text">歡迎回來</h1>
+      <p class="text-text-light">登入以管理您的旅遊支出</p>
+    </div>
+
+    <div class="w-24 h-24 bg-surface rounded-full shadow-soft flex items-center justify-center text-primary text-4xl mb-4">
+      <i class="fas fa-plane-departure"></i>
+      <!-- Or use an image/logo -->
+      ✈️
+    </div>
+
+    <button (click)="login()" class="soft-btn w-full flex items-center justify-center gap-3 py-4 text-lg">
+      <fa-icon [icon]="faGoogle" class="text-red-500"></fa-icon>
+      <span>使用 Google 登入</span>
+    </button>
+    
+    <p class="text-sm text-text-light mt-8">
+      AccountingBooks &copy; 2026
+    </p>
+  </div>
+</div>
