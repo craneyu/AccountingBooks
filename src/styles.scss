@@ -166,6 +166,11 @@ body {
   // Force horizontal-only touch interaction
   touch-action: pan-x !important;
   -ms-touch-action: pan-x !important;
+  // Prevent text selection during drag
+  user-select: none;
+  -webkit-user-select: none;
+  // Disable iOS callout menu
+  -webkit-touch-callout: none;
 
   &::-webkit-scrollbar {
     display: none;
@@ -180,6 +185,8 @@ body {
   // Prevent vertical scrolling completely
   overscroll-behavior-y: contain;
   overscroll-behavior-x: auto;
+  // Prevent pull-to-refresh
+  overscroll-behavior: contain;
 }
 
 // Individual Slide - Each slide takes exactly 100% of viewport width
@@ -441,5 +448,82 @@ body {
 .photo-gallery-image {
   &[src] {
     animation: fadeIn 0.4s ease;
+  }
+}
+
+// Special handling for photo gallery SweetAlert2
+.photo-gallery-swal-container {
+  // Ensure proper touch handling
+  .swal2-popup {
+    pointer-events: auto !important;
+  }
+
+  // Ensure the wrapper and container handle touches correctly
+  .photo-gallery-wrapper {
+    pointer-events: auto !important;
+    // Prevent text selection and long-press menus on mobile
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  // The gallery container itself should capture all touch events
+  .photo-gallery-container {
+    pointer-events: auto !important;
+    touch-action: pan-x !important;
+    -ms-touch-action: pan-x !important;
+    // Prevent pull-to-refresh on mobile browsers
+    overscroll-behavior: contain;
+  }
+
+  // Override SweetAlert2 close button - move to top-right corner
+  .swal2-close {
+    position: fixed !important;
+    top: 16px !important;
+    right: 16px !important;
+    left: auto !important;
+    z-index: 2000 !important;
+    width: 48px !important;
+    height: 48px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 50% !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    font-size: 32px !important;
+    font-weight: 300 !important;
+    line-height: 44px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.7) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      transform: scale(1.1) !important;
+    }
+
+    &:active {
+      transform: scale(0.95) !important;
+    }
+
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.5) !important;
+    }
+  }
+}
+
+// Mobile adjustments for close button
+@media (max-width: 768px) {
+  .photo-gallery-swal-container .swal2-close {
+    top: 12px !important;
+    right: 12px !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 28px !important;
+    line-height: 40px !important;
   }
 }

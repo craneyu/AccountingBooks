@@ -145,17 +145,14 @@ export class ExpensesComponent {
       background: 'transparent',
       customClass: {
         popup: '!bg-transparent shadow-none !w-screen !max-w-none',
-        htmlContainer: '!m-0 !p-0 !overflow-visible'
+        htmlContainer: '!m-0 !p-0 !overflow-visible',
+        container: 'photo-gallery-swal-container'
       },
       backdrop: `rgba(0,0,0,0.95)`,
-      // Prevent SweetAlert2 from interfering with touch events
       allowOutsideClick: true,
       didOpen: () => {
-        // Ensure the container doesn't have conflicting touch handlers
-        const swalContainer = document.querySelector('.swal2-container');
-        if (swalContainer) {
-          (swalContainer as HTMLElement).style.touchAction = 'none';
-        }
+        // IMPORTANT: Don't block touch events on the container
+        // The gallery container itself handles touch-action: pan-x
         this.initializeGallery(images.length);
       },
       willClose: () => {
