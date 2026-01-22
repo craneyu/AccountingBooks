@@ -77,32 +77,48 @@ export class ExpensesComponent {
         showConfirmButton: false,
         showCloseButton: true,
         width: 'auto',
+        padding: '0',
         customClass: {
-          popup: 'rounded-2xl shadow-soft p-0 overflow-hidden',
-          image: 'm-0 max-h-[80vh] w-auto object-contain'
+          popup: 'rounded-2xl shadow-soft overflow-hidden !bg-transparent',
+          image: 'm-0 max-h-[90vh] w-auto object-contain'
         },
-        backdrop: `rgba(0,0,0,0.8)`
+        backdrop: `rgba(0,0,0,0.9)`
       });
     } else {
-      // Multiple Images Gallery
-      // Simple vertical scroll for now
+      // Multiple Images Gallery with Swipe Support
       const htmlContent = `
-        <div class="flex flex-col gap-4 max-h-[70vh] overflow-y-auto p-2">
-          ${images.map(url => `<img src="${url}" class="w-full h-auto rounded-lg shadow-sm">`).join('')}
+        <div class="relative group">
+          <div class="gallery-container flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-0 w-full">
+            ${images.map((url, i) => `
+              <div class="snap-center shrink-0 w-full flex flex-col items-center justify-center min-h-[50vh] max-h-[85vh]">
+                <img src="${url}" class="max-w-full max-h-[75vh] object-contain shadow-lg rounded-sm">
+                <div class="mt-4 text-white/70 text-sm font-medium">
+                  照片 ${i + 1} / ${images.length}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <!-- Swipe Hint for mobile -->
+          <div class="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none md:hidden">
+             <div class="bg-black/50 text-white px-3 py-1 rounded-full text-xs animate-pulse">
+               ⬅ 左右滑動切換 ➡
+             </div>
+          </div>
         </div>
       `;
 
       Swal.fire({
-        title: '收據照片',
         html: htmlContent,
         showConfirmButton: false,
         showCloseButton: true,
-        width: '600px',
+        width: '100%',
+        padding: '0',
+        background: 'transparent',
         customClass: {
-          popup: 'rounded-2xl shadow-soft',
-          htmlContainer: '!m-0 !p-0'
+          popup: '!bg-transparent shadow-none w-full max-w-4xl',
+          htmlContainer: '!m-0 !p-0 overflow-hidden'
         },
-        backdrop: `rgba(0,0,0,0.8)`
+        backdrop: `rgba(0,0,0,0.9)`
       });
     }
   }
