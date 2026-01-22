@@ -29,15 +29,9 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ],
-            "polyfills": [
-              "zone.js"
-            ],
-            "allowedCommonJsDependencies": [
-              "sweetalert2"
-            ]
+            "styles": ["src/styles.scss", "node_modules/swiper/swiper-bundle.min.css"],
+            "polyfills": ["zone.js"],
+            "allowedCommonJsDependencies": ["sweetalert2"]
           },
           "configurations": {
             "production": {
