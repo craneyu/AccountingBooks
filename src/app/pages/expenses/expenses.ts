@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
-  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, 
+  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages,
   faUtensils, faBus, faBed, faShoppingBag, faFilm, faEllipsisH 
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
@@ -41,6 +41,7 @@ export class ExpensesComponent {
   faEdit = faEdit;
   faTrash = faTrash;
   faReceipt = faReceipt;
+  faImages = faImages;
   
   // Category Icons Map
   getCategoryIcon(category: string) {
@@ -62,6 +63,48 @@ export class ExpensesComponent {
   openEdit(expense: Expense) {
     this.selectedExpense = expense;
     this.showDialog = true;
+  }
+
+  viewReceipts(expense: Expense) {
+    const images = expense.receiptImageUrls || (expense.receiptImageUrl ? [expense.receiptImageUrl] : []);
+    
+    if (images.length === 0) return;
+
+    if (images.length === 1) {
+      Swal.fire({
+        imageUrl: images[0],
+        imageAlt: 'Receipt',
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: 'auto',
+        customClass: {
+          popup: 'rounded-2xl shadow-soft p-0 overflow-hidden',
+          image: 'm-0 max-h-[80vh] w-auto object-contain'
+        },
+        backdrop: `rgba(0,0,0,0.8)`
+      });
+    } else {
+      // Multiple Images Gallery
+      // Simple vertical scroll for now
+      const htmlContent = `
+        <div class="flex flex-col gap-4 max-h-[70vh] overflow-y-auto p-2">
+          ${images.map(url => `<img src="${url}" class="w-full h-auto rounded-lg shadow-sm">`).join('')}
+        </div>
+      `;
+
+      Swal.fire({
+        title: '收據照片',
+        html: htmlContent,
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: '600px',
+        customClass: {
+          popup: 'rounded-2xl shadow-soft',
+          htmlContainer: '!m-0 !p-0'
+        },
+        backdrop: `rgba(0,0,0,0.8)`
+      });
+    }
   }
 
   async delete(expense: Expense) {

@@ -79,17 +79,21 @@
         <label class="block text-sm font-medium text-text-light mb-1">收據 / 照片</label>
         <div class="flex items-center gap-4">
            <button type="button" (click)="fileInput.click()" class="soft-btn text-sm py-2 px-3 bg-gray-100 flex items-center gap-2">
-             <fa-icon [icon]="faCamera"></fa-icon> <span>{{ previewUrl ? '更換照片' : '新增照片' }}</span>
+             <fa-icon [icon]="faCamera"></fa-icon> <span>{{ previewUrls.length > 0 ? '新增更多照片' : '新增照片' }}</span>
            </button>
-           <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden">
-           <span *ngIf="selectedFile" class="text-xs text-text-light truncate max-w-[150px]">{{ selectedFile.name }}</span>
+           <input #fileInput type="file" (change)="onFilesSelected($event)" accept="image/*" multiple class="hidden">
+           <span *ngIf="newFiles.length > 0" class="text-xs text-text-light">已選擇 {{ newFiles.length }} 張新照片</span>
         </div>
         
-        <div *ngIf="previewUrl" class="mt-3 relative rounded-xl overflow-hidden shadow-soft-inset max-h-40 w-full bg-gray-100">
-           <img [src]="previewUrl" class="w-full h-full object-contain">
-           <button type="button" (click)="previewUrl = null; selectedFile = null" class="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-500">
-             <fa-icon [icon]="faTimes" size="sm"></fa-icon>
-           </button>
+        <div *ngIf="previewUrls.length > 0" class="mt-3 grid grid-cols-3 gap-2">
+           <div *ngFor="let item of previewUrls; let i = index" class="relative rounded-xl overflow-hidden shadow-soft-inset bg-gray-100 aspect-square group">
+             <img [src]="item.url" class="w-full h-full object-cover">
+             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <button type="button" (click)="removeImage(i)" class="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors">
+                  <fa-icon [icon]="faTimes"></fa-icon>
+                </button>
+             </div>
+           </div>
         </div>
       </div>
 

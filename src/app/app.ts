@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { SystemSettingsService } from './core/services/system-settings.service';
 
 @Component({
   selector: 'app-root',
@@ -8,5 +9,6 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.scss'
 })
 export class App {
-  protected readonly title = signal('accounting-books');
+  // Initialize settings service
+  private settingsService = inject(SystemSettingsService);
 }
