@@ -1,0 +1,39 @@
+<div class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-surface shadow-soft-sm z-10 relative">
+    <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+      <!-- Logo / Home Link -->
+      <a routerLink="/" class="flex items-center gap-2 text-primary font-bold text-xl hover:opacity-80 transition-opacity">
+        <fa-icon [icon]="faSuitcaseRolling" class="text-2xl"></fa-icon>
+        <span>PayState</span>
+      </a>
+
+      <!-- User Actions -->
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-text text-sm font-medium" *ngIf="currentUser() as user">
+          <div *ngIf="user.photoURL" class="w-8 h-8 rounded-full overflow-hidden shadow-soft-inset border-2 border-white">
+            <img [src]="user.photoURL" [alt]="user.displayName" class="w-full h-full object-cover">
+          </div>
+          <span *ngIf="!user.photoURL" class="w-8 h-8 rounded-full bg-surface shadow-soft flex items-center justify-center text-primary">
+            <fa-icon [icon]="faUser"></fa-icon>
+          </span>
+          <span>{{ user.displayName }}</span>
+        </div>
+
+        <button (click)="logout()" class="soft-btn-icon text-text-light hover:text-danger" title="登出">
+          <fa-icon [icon]="faSignOutAlt"></fa-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 container mx-auto px-4 py-8">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-6 text-center text-text-light text-sm opacity-60">
+    <p>AccountingBooks &copy; 2026</p>
+  </footer>
+</div>

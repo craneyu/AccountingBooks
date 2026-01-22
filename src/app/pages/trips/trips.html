@@ -1,0 +1,71 @@
+<div class="space-y-6 animate-fade-in-up">
+  <div class="flex items-center justify-between mb-8">
+    <h2 class="text-2xl font-bold text-text">我的旅程</h2>
+    
+    <div class="flex gap-3" *ngIf="isAdmin()">
+      <a routerLink="/admin/dashboard" class="soft-btn bg-white text-text-light hover:text-primary shadow-soft-sm flex items-center gap-2">
+        <fa-icon [icon]="faTools"></fa-icon>
+        <span>管理後台</span>
+      </a>
+      <button (click)="openAddTrip()" class="soft-btn soft-btn-primary flex items-center gap-2">
+        <fa-icon [icon]="faPlus"></fa-icon>
+        <span>新增旅程</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @for (trip of trips$ | async; track trip.id) {
+      <a [routerLink]="['/trip', trip.id, 'expenses']" class="block relative group">
+        <div class="soft-card hover:-translate-y-1 transition-transform duration-300 h-full flex flex-col">
+          <!-- Admin Actions -->
+          <div *ngIf="isAdmin()" class="absolute top-2 right-2 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button (click)="openEditTrip($event, trip)" class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-primary hover:text-primary-dark transition-colors">
+              <fa-icon [icon]="faEdit"></fa-icon>
+            </button>
+            <button (click)="deleteTrip($event, trip)" class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-danger hover:text-red-700 transition-colors">
+               <fa-icon [icon]="faTrash"></fa-icon>
+            </button>
+          </div>
+
+          <!-- Cover Image / Placeholder -->
+          <div class="h-48 rounded-xl bg-gray-100 mb-4 overflow-hidden relative shadow-soft-inset flex-shrink-0">
+            <img *ngIf="trip.coverImage" [src]="trip.coverImage" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" [alt]="trip.name">
+            <div *ngIf="!trip.coverImage" class="w-full h-full flex items-center justify-center text-secondary/40 text-5xl bg-gradient-to-br from-gray-100 to-gray-200">
+                <fa-icon [icon]="faMapMarkedAlt"></fa-icon>
+            </div>
+            
+            <div class="absolute bottom-3 right-3 soft-badge bg-white/80 backdrop-blur-sm text-primary-dark shadow-sm">
+              {{ trip.currency }}
+            </div>
+          </div>
+          
+          <div class="flex-1 flex flex-col">
+            <h3 class="text-xl font-bold text-text mb-2 group-hover:text-primary transition-colors">{{ trip.name }}</h3>
+            
+            <div class="flex items-center text-text-light text-sm mb-3">
+              <fa-icon [icon]="faCalendarAlt" class="mr-2 opacity-70"></fa-icon>
+              <span>{{ trip.startDate.toDate() | date:'yyyy/MM/dd' }}</span>
+              <span class="mx-1">-</span>
+              <span>{{ trip.endDate.toDate() | date:'yyyy/MM/dd' }}</span>
+            </div>
+
+            <p class="text-text-light text-sm line-clamp-3 mb-4 flex-1">
+              {{ trip.description || '未提供描述。' }}
+            </p>
+          </div>
+        </div>
+      </a>
+    } @empty {
+      <div class="col-span-full flex flex-col items-center justify-center py-20 text-text-light opacity-60">
+         <div class="w-24 h-24 rounded-full bg-surface shadow-soft flex items-center justify-center mb-6 text-4xl">
+           <fa-icon [icon]="faSuitcaseRolling"></fa-icon>
+         </div>
+         <p class="text-xl font-medium">找不到進行中的旅程。</p>
+         <p class="text-sm mt-2">請聯繫管理員新增旅程。</p>
+      </div>
+    }
+  </div>
+</div>
+
+<app-trip-dialog *ngIf="showTripDialog()" [trip]="selectedTrip()" (close)="showTripDialog.set(false)"></app-trip-dialog>

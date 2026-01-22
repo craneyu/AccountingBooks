@@ -1,0 +1,77 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+  <div class="soft-card w-full max-w-lg flex flex-col relative animate-scale-in">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-text">{{ trip ? '編輯旅程' : '新增旅程' }}</h2>
+      <button (click)="cancel()" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger transition-colors">
+        <fa-icon [icon]="faTimes"></fa-icon>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      
+      <!-- Name -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">旅程名稱</label>
+        <input type="text" formControlName="name" class="soft-input" placeholder="例如：2026 日本春季旅遊">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">描述</label>
+        <textarea formControlName="description" rows="2" class="soft-input" placeholder="簡短描述..."></textarea>
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">開始日期</label>
+          <input type="date" formControlName="startDate" class="soft-input">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">結束日期</label>
+          <input type="date" formControlName="endDate" class="soft-input">
+        </div>
+      </div>
+
+      <!-- Currency & Status -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">主要幣別</label>
+          <select formControlName="currency" class="soft-select">
+            <option value="TWD">台幣 (TWD)</option>
+            <option value="JPY">日圓 (JPY)</option>
+            <option value="USD">美元 (USD)</option>
+            <option value="EUR">歐元 (EUR)</option>
+            <option value="KRW">韓元 (KRW)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">狀態</label>
+          <select formControlName="status" class="soft-select">
+            <option value="active">啟用</option>
+            <option value="inactive">停用</option>
+          </select>
+        </div>
+      </div>
+
+       <!-- Cover Image URL (Simple for now) -->
+       <div>
+        <label class="block text-sm font-medium text-text-light mb-1">封面圖片網址</label>
+        <input type="text" formControlName="coverImage" class="soft-input" placeholder="https://...">
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-4">
+        <button type="button" (click)="cancel()" class="soft-btn flex-1 bg-gray-200">取消</button>
+        <button type="submit" [disabled]="form.invalid || loading" class="soft-btn soft-btn-primary flex-1">
+          <span *ngIf="!loading">{{ trip ? '更新' : '建立旅程' }}</span>
+          <span *ngIf="loading"><fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon></span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

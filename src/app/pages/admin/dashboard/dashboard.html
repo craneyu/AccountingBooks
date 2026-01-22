@@ -1,0 +1,40 @@
+<div class="space-y-8 animate-fade-in-up">
+  <div class="flex items-center justify-between">
+    <h2 class="text-3xl font-bold text-text">管理後台</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Trip Management -->
+    <a routerLink="/admin/trips" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+          <fa-icon [icon]="faSuitcase"></fa-icon>
+        </div>
+        <h3 class="text-xl font-bold text-text">旅程管理</h3>
+      </div>
+      <p class="text-text-light">建立、編輯與管理旅遊主題。控制顯示狀態。</p>
+    </a>
+
+    <!-- User Management (Placeholder) -->
+    <div class="soft-card opacity-60 cursor-not-allowed">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center text-2xl">
+          <fa-icon [icon]="faUsers"></fa-icon>
+        </div>
+        <h3 class="text-xl font-bold text-text-light">使用者管理</h3>
+      </div>
+      <p class="text-text-light text-sm">管理使用者角色、權限與帳號狀態。（即將推出）</p>
+    </div>
+
+    <!-- Statistics (Placeholder) -->
+    <div class="soft-card opacity-60 cursor-not-allowed">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center text-2xl">
+          <fa-icon [icon]="faChartLine"></fa-icon>
+        </div>
+        <h3 class="text-xl font-bold text-text-light">系統統計</h3>
+      </div>
+      <p class="text-text-light text-sm">查看系統統計與使用報表。（即將推出）</p>
+    </div>
+  </div>
+</div>
