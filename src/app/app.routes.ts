@@ -9,6 +9,7 @@ import { TripManagementComponent } from './pages/admin/trip-management/trip-mana
 import { UserManagementComponent } from './pages/admin/user-management/user-management';
 import { StatisticsComponent } from './pages/admin/statistics/statistics';
 import { CategoryManagementComponent } from './pages/admin/category-management/category-management';
+import { PaymentMethodManagementComponent } from './pages/admin/payment-method-management/payment-method-management';
 
 export const routes: Routes = [
   {
@@ -41,7 +42,8 @@ export const routes: Routes = [
           { path: 'trips', component: TripManagementComponent },
           { path: 'users', component: UserManagementComponent },
           { path: 'stats', component: StatisticsComponent },
-          { path: 'categories', component: CategoryManagementComponent }
+          { path: 'categories', component: CategoryManagementComponent },
+          { path: 'payment-methods', component: PaymentMethodManagementComponent }
         ]
       }
     ]

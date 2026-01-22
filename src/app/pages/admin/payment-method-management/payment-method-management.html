@@ -1,0 +1,43 @@
+<div class="animate-fade-in-up space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a routerLink="/admin/dashboard" class="soft-btn-icon text-text-light">
+        <fa-icon [icon]="faArrowLeft"></fa-icon>
+      </a>
+      <h2 class="text-3xl font-bold text-text">支付方式管理</h2>
+    </div>
+    <button (click)="addMethod()" class="soft-btn soft-btn-primary px-6">
+      <fa-icon [icon]="faPlus" class="mr-2"></fa-icon>
+      新增方式
+    </button>
+  </div>
+
+  <!-- Method List -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    @for (method of methods$ | async; track method.id) {
+      <div class="soft-card flex items-center justify-between p-4 group">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+             <fa-icon [icon]="faWallet" class="text-sm opacity-50"></fa-icon>
+          </div>
+          <span class="font-bold text-text text-lg">{{ method.name }}</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+           <button (click)="editMethod(method)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-colors">
+             <fa-icon [icon]="faEdit" size="sm"></fa-icon>
+           </button>
+           <button (click)="deleteMethod(method)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-colors">
+             <fa-icon [icon]="faTrash" size="sm"></fa-icon>
+           </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="col-span-full py-20 text-center text-text-light opacity-60">
+        <p>尚未建立自定義支付方式。</p>
+        <p class="text-sm">系統將暫時使用預設支付方式。</p>
+      </div>
+    }
+  </div>
+</div>
