@@ -21,11 +21,12 @@
 | 框架         | Angular (Standalone Components) | 21+     |
 | 狀態管理     | Angular Signals                 | 21+     |
 | HTTP 客戶端  | Angular HttpClient              | -       |
-| UI 框架      | Tailwind CSS                    | @latest |
+| UI 框架      | Tailwind CSS                    | 3.4+    |
 | CSS 預處理器 | Sass                            | @latest |
 | 圖標函式庫   | Font Awesome (Angular)          | 7.x     |
-| 對話框元件   | SweetAlert2                     | @latest |
-| 加解密函式庫 | crypto-js                       | @latest |
+| 對話框元件   | SweetAlert2                     | 11.x    |
+| 輪播/相簿    | Swiper.js                       | 12.x    |
+| 加解密函式庫 | crypto-js                       | 4.x     |
 
 ### 後端服務
 
@@ -83,6 +84,9 @@ npm install @fortawesome/angular-fontawesome@latest \
 
 # SweetAlert2
 npm install sweetalert2@latest
+
+# Swiper.js（圖片輪播與相簿功能）
+npm install swiper@latest
 
 # crypto-js
 npm install crypto-js@latest
@@ -239,6 +243,20 @@ npm install -g firebase-tools
 - 確認對話框（使用 SweetAlert2）
 - 刪除成功提示
 
+**E. 查看收據圖片**
+
+- 支援多張圖片上傳與查看
+- 使用 **Swiper.js** 實現流暢的圖片瀏覽體驗
+- 功能特色：
+  - iOS 原生滑動支援（解決觸控問題）
+  - 左右導航按鈕
+  - 分頁指示器（可點擊）
+  - 鍵盤控制（方向鍵、ESC）
+  - 響應式設計（手機/平板/桌面）
+  - 縮放功能支援
+- 點擊圖片圖示開啟相簿
+- 顯示圖片數量提示
+
 #### 2.3 報表頁面
 
 **路由**：`/trip/:tripId/reports`
@@ -289,7 +307,7 @@ interface Trip {
   name: string; // 主題名稱
   startDate: Timestamp; // 起始日期
   endDate: Timestamp; // 結束日期
-  status: "active" | "inactive"; // 狀態
+  status: 'active' | 'inactive'; // 狀態
   createdAt: Timestamp; // 建立時間
   createdBy: string; // 建立者 Email
   updatedAt: Timestamp; // 更新時間
@@ -309,12 +327,13 @@ interface Expense {
   expenseDate: Timestamp; // 支出日期
   amount: number; // 支出金額
   currency: string; // 幣別（如：JPY, USD）
-  exchangeRate: number; // 匣率（對 TWD）
-  exchangeRateTime: Timestamp; // 匣率查詢時間
+  exchangeRate: number; // 匯率（對 TWD）
+  exchangeRateTime: Timestamp; // 匯率查詢時間
   amountInTWD: number; // 折合台幣
   category: string; // 支付類別
   paymentMethod: string; // 支付方式
-  receiptImageUrl?: string; // 收據圖片 URL
+  receiptImageUrl?: string; // 單張收據圖片 URL（向下相容）
+  receiptImageUrls?: string[]; // 多張收據圖片 URLs
   note?: string; // 備註
   submittedAt: Timestamp; // 提交時間
   submittedBy: string; // 提交者 UID（必填）
@@ -334,7 +353,7 @@ interface User {
   displayName: string; // 顯示名稱
   photoURL?: string; // 大頭照 URL
   isAdmin: boolean; // 是否為管理者
-  status: "active" | "inactive"; // 帳號狀態
+  status: 'active' | 'inactive'; // 帳號狀態
   createdAt: Timestamp; // 建立時間
   createdBy?: string; // 建立者 Email（管理者新增時）
   lastLoginAt: Timestamp; // 最後登入時間
@@ -575,7 +594,7 @@ class ExchangeRateService {
 
   async getExchangeRate(targetCurrency: string): Promise<number> {
     const today = this.getToday(); // YYYY-MM-DD
-    const cacheId = `${targetCurrency}_${today.replace(/-/g, "")}`;
+    const cacheId = `${targetCurrency}_${today.replace(/-/g, '')}`;
 
     // 步驟 1：檢查快取
     const cached = await this.getCachedRate(cacheId);
@@ -829,8 +848,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -841,8 +860,8 @@ jobs:
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
           projectId: your-firebase-project-id
 ```
@@ -890,7 +909,20 @@ Closes #123
 
 - [ ] 確定配色方案（主色、輔助色、中性色）
 - [ ] 選擇圖表函式庫
-- [x] 決定幣別匣率資料來源（使用 ExchangeRate-API）
+- [x] 決定幣別匯率資料來源（使用 ExchangeRate-API）
+- [x] 圖片查看功能優化（已整合 Swiper.js，支援 iOS）
 - [ ] 規劃備份與還原機制
 - [ ] 多語系支援需求確認
 - [ ] 匯率 API 金鑰申請與配置
+
+---
+
+## 更新記錄
+
+### 2026-01-22
+
+- ✅ 整合 Swiper.js 取代自訂圖片滑動功能
+- ✅ 優化 iOS 觸控滑動體驗
+- ✅ 新增多張收據圖片支援
+- ✅ 更新技術棧文件（README.md、SPEC.md）
+- ✅ 調整 Sass 樣式匯入方式避免警告
