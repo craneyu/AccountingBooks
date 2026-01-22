@@ -11,9 +11,10 @@
       ✈️
     </div>
 
-    <button (click)="login()" class="soft-btn w-full flex items-center justify-center gap-3 py-4 text-lg">
-      <fa-icon [icon]="faGoogle" class="text-red-500"></fa-icon>
-      <span>使用 Google 登入</span>
+    <button (click)="login()" [disabled]="loading()" class="soft-btn w-full flex items-center justify-center gap-3 py-4 text-lg">
+      <fa-icon *ngIf="!loading()" [icon]="faGoogle" class="text-red-500"></fa-icon>
+      <fa-icon *ngIf="loading()" [icon]="faSpinner" class="animate-spin"></fa-icon>
+      <span>{{ loading() ? '登入中...' : '使用 Google 登入' }}</span>
     </button>
     
     <p class="text-sm text-text-light mt-8">

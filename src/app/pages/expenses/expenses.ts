@@ -100,20 +100,20 @@ export class ExpensesComponent {
       });
     } else {
       const htmlContent = `
-        <div class="relative group">
-          <div class="gallery-container flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-0 w-full">
+        <div class="relative group w-full h-full">
+          <div class="gallery-container w-full h-full">
             ${images.map((url, i) => `
-              <div class="snap-center shrink-0 w-full flex flex-col items-center justify-center min-h-[50vh] max-h-[85vh]">
-                <img src="${url}" class="max-w-full max-h-[75vh] object-contain shadow-lg rounded-sm">
-                <div class="mt-4 text-white/70 text-sm font-medium">
-                  照片 ${i + 1} / ${images.length}
+              <div class="snap-center">
+                <img src="${url}" class="max-w-[95vw] max-h-[75vh] object-contain shadow-2xl rounded-lg">
+                <div class="mt-6 text-white/90 text-base font-bold bg-black/30 px-4 py-1 rounded-full backdrop-blur-sm">
+                  ${i + 1} / ${images.length}
                 </div>
               </div>
             `).join('')}
           </div>
-          <div class="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none md:hidden">
-             <div class="bg-black/50 text-white px-3 py-1 rounded-full text-xs animate-pulse">
-               ⬅ 左右滑動切換 ➡
+          <div class="absolute bottom-20 left-0 right-0 flex justify-center pointer-events-none md:hidden">
+             <div class="bg-black/60 text-white px-4 py-2 rounded-full text-sm animate-pulse border border-white/20 backdrop-blur-md">
+               ⬅ 左右滑動切換照片 ➡
              </div>
           </div>
         </div>

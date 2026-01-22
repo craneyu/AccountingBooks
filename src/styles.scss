@@ -51,4 +51,21 @@ body {
   .soft-badge {
     @apply px-3 py-1 rounded-full text-sm font-medium shadow-soft-sm;
   }
+
+  // Photo Gallery for SweetAlert2
+  .gallery-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    @apply flex overflow-x-auto snap-x snap-mandatory gap-0 w-full;
+  }
+
+  .snap-center {
+    scroll-snap-align: center;
+    @apply shrink-0 w-full flex flex-col items-center justify-center;
+  }
 }

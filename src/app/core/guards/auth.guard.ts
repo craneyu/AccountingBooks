@@ -1,31 +1,38 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { map, take, filter } from 'rxjs/operators';
+import { map, take, filter, switchMap } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 
 export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
+  
+  // 核心修正：將 toObservable 移至頂層宣告，確保處於 Injection Context 中
+  const currentUser$ = toObservable(authService.currentUser);
 
-  // Convert the currentUser signal to an observable and wait for it to be loaded
-  return toObservable(authService.currentUser).pipe(
-    // We need to wait until the auth state is determined (not undefined/null initially if it's still loading)
-    // However, if the user is truly null (not logged in), we should redirect.
-    // AuthService sets currentUser to null if not logged in.
-    filter(user => user !== undefined), 
+  // 1. 先等待 AuthService 初始化完成
+  return authService.isInitialized$.pipe(
+    filter(initialized => initialized === true),
     take(1),
-    map(user => {
-      if (user && user.status === 'active') {
-        return true;
-      } else if (user && user.status === 'inactive') {
-        // You might want to show a specific "Account Disabled" message
-        alert('您的帳號已被停用，請聯絡管理員。');
-        authService.logout();
-        return false;
-      } else {
-        return router.createUrlTree(['/login']);
-      }
+    switchMap(() => {
+      // 2. 初始化完成後，再檢查目前使用者狀態
+      return currentUser$.pipe(
+        // 過濾掉初始的 undefined，直到獲得真正的 null 或 User 物件
+        filter(user => user !== undefined),
+        take(1),
+        map(user => {
+          if (user && user.status === 'active') {
+            return true;
+          } else if (user && user.status === 'inactive') {
+            alert('您的帳號已被停用，請聯絡管理員。');
+            authService.logout();
+            return false;
+          } else {
+            return router.createUrlTree(['/login']);
+          }
+        })
+      );
     })
   );
 };

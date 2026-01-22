@@ -1,4 +1,12 @@
 <div class="min-h-screen flex flex-col">
+  <!-- Global Loading Overlay -->
+  <div *ngIf="!isInitialized()" class="fixed inset-0 z-[9999] bg-surface flex flex-col items-center justify-center space-y-4">
+    <div class="w-16 h-16 rounded-full bg-white shadow-soft flex items-center justify-center text-primary text-2xl">
+      <fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon>
+    </div>
+    <p class="text-text-light font-medium animate-pulse">正在載入系統資料...</p>
+  </div>
+
   <!-- Header -->
   <header class="bg-surface shadow-soft-sm z-10 relative">
     <div class="container mx-auto px-4 h-16 flex items-center justify-between">
