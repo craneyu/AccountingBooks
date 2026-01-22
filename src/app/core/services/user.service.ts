@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy, addDoc, setDoc } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy, addDoc, setDoc, deleteDoc } from '@angular/fire/firestore';
 import { User } from '../models/user.model';
 import { Observable } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
@@ -30,11 +30,16 @@ export class UserService {
     return addDoc(usersRef, finalData);
   }
 
+  async deleteUser(userId: string) {
+    const userRef = doc(this.firestore, 'users', userId);
+    return deleteDoc(userRef);
+  }
+
   async updateUser(userId: string, data: Partial<User>) {
     const userRef = doc(this.firestore, 'users', userId);
     return updateDoc(userRef, {
       ...data,
-      updatedAt: new Date() // Firestore modular SDK will handle Date to Timestamp if configured, or use Timestamp.now()
+      updatedAt: Timestamp.now()
     });
   }
 

@@ -5,8 +5,9 @@ import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../core/models/user.model';
 import { Observable } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faArrowLeft, faUserShield, faUser, faUserSlash, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUserShield, faUser, faUserSlash, faCheckCircle, faTimesCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { UserDialogComponent } from '../../../components/user-dialog/user-dialog';
+import { AuthService } from '../../../core/services/auth.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,8 +19,10 @@ import Swal from 'sweetalert2';
 })
 export class UserManagementComponent {
   private userService = inject(UserService);
+  private authService = inject(AuthService);
 
   users$: Observable<User[]> = this.userService.getUsers();
+  currentUser = this.authService.currentUser;
   showDialog = false;
 
   faArrowLeft = faArrowLeft;
@@ -28,6 +31,7 @@ export class UserManagementComponent {
   faUserSlash = faUserSlash;
   faCheckCircle = faCheckCircle;
   faTimesCircle = faTimesCircle;
+  faTrash = faTrash;
 
   openAdd() {
     this.showDialog = true;
@@ -35,6 +39,39 @@ export class UserManagementComponent {
 
   closeDialog() {
     this.showDialog = false;
+  }
+
+  async deleteUser(user: User) {
+    if (user.id === this.currentUser()?.id) {
+      Swal.fire('錯誤', '您不能刪除自己的帳號。', 'error');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: '確定要刪除此使用者嗎？',
+      text: `刪除 ${user.displayName || user.email} 後將無法復原資料。`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e53e3e',
+      confirmButtonText: '是的，刪除',
+      cancelButtonText: '取消'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await this.userService.deleteUser(user.id);
+        Swal.fire({
+          icon: 'success',
+          title: '已刪除使用者',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000
+        });
+      } catch (error) {
+        Swal.fire('錯誤', '刪除失敗', 'error');
+      }
+    }
   }
 
   async toggleAdmin(user: User) {
