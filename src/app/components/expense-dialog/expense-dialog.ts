@@ -12,6 +12,7 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faTimes, faSpinner, faSync, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { compressImage } from '../../core/utils/image-utils';
 
 @Component({
   selector: 'app-expense-dialog',
@@ -151,9 +152,15 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   async uploadFile(): Promise<string | null> {
     if (!this.selectedFile) return null;
     try {
-        const path = `receipts/${this.tripId}/${new Date().getTime()}_${this.selectedFile.name}`;
+        // Compress image before upload (Max 1024px, 0.8 quality)
+        const compressedBlob = await compressImage(this.selectedFile, 1024, 1024, 0.8);
+        
+        // Use .jpg extension for the compressed file
+        const fileName = this.selectedFile.name.substring(0, this.selectedFile.name.lastIndexOf('.')) || this.selectedFile.name;
+        const path = `receipts/${this.tripId}/${new Date().getTime()}_${fileName}.jpg`;
+        
         const storageRef = ref(this.storage, path);
-        const result = await uploadBytes(storageRef, this.selectedFile);
+        const result = await uploadBytes(storageRef, compressedBlob);
         return await getDownloadURL(result.ref);
     } catch (error) {
         console.error('Upload failed', error);
