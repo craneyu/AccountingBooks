@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy, addDoc, setDoc } from '@angular/fire/firestore';
 import { User } from '../models/user.model';
 import { Observable } from 'rxjs';
+import { Timestamp } from 'firebase/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,20 @@ export class UserService {
     const usersRef = collection(this.firestore, 'users');
     const q = query(usersRef, orderBy('createdAt', 'desc'));
     return collectionData(q, { idField: 'id' }) as Observable<User[]>;
+  }
+
+  async addUser(userData: Partial<User>) {
+    const usersRef = collection(this.firestore, 'users');
+    const now = Timestamp.now();
+    const finalData = {
+      ...userData,
+      status: userData.status || 'active',
+      isAdmin: userData.isAdmin || false,
+      createdAt: now,
+      updatedAt: now,
+      lastLoginAt: now
+    };
+    return addDoc(usersRef, finalData);
   }
 
   async updateUser(userId: string, data: Partial<User>) {
