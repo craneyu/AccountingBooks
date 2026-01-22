@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angula
 import { ExpenseService } from '../../core/services/expense.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AuthService } from '../../core/services/auth.service';
+import { CategoryService } from '../../core/services/category.service';
 import { Expense } from '../../core/models/expense.model';
 import { Timestamp } from 'firebase/firestore';
 import { Storage } from '@angular/fire/storage';
@@ -31,6 +32,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   private expenseService = inject(ExpenseService);
   private exchangeRateService = inject(ExchangeRateService);
   private authService = inject(AuthService);
+  private categoryService = inject(CategoryService);
   private storage = inject(Storage);
 
   form!: FormGroup;
@@ -43,9 +45,9 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   faSync = faSync;
   faCamera = faCamera;
 
-  // Constants
+  // Constants & State
   currencies = ['TWD', 'JPY', 'USD', 'EUR', 'KRW', 'CNY', 'THB', 'GBP'];
-  categories = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他'];
+  categories: string[] = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他']; // Defaults
   paymentMethods = ['現金', '信用卡', '行動支付'];
 
   newFiles: File[] = [];
@@ -87,6 +89,13 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       category: [this.expense?.category || '餐飲', Validators.required],
       paymentMethod: [this.expense?.paymentMethod || '現金', Validators.required],
       note: [this.expense?.note || '']
+    });
+
+    // Load dynamic categories
+    this.categoryService.getCategories().subscribe(cats => {
+      if (cats && cats.length > 0) {
+        this.categories = cats.map(c => c.name);
+      }
     });
 
     // Initialize Previews

@@ -8,6 +8,7 @@ import { AdminDashboardComponent } from './pages/admin/dashboard/dashboard';
 import { TripManagementComponent } from './pages/admin/trip-management/trip-management';
 import { UserManagementComponent } from './pages/admin/user-management/user-management';
 import { StatisticsComponent } from './pages/admin/statistics/statistics';
+import { CategoryManagementComponent } from './pages/admin/category-management/category-management';
 
 export const routes: Routes = [
   {
@@ -39,7 +40,8 @@ export const routes: Routes = [
           { path: 'dashboard', component: AdminDashboardComponent },
           { path: 'trips', component: TripManagementComponent },
           { path: 'users', component: UserManagementComponent },
-          { path: 'stats', component: StatisticsComponent }
+          { path: 'stats', component: StatisticsComponent },
+          { path: 'categories', component: CategoryManagementComponent }
         ]
       }
     ]
