@@ -7,7 +7,7 @@
       </a>
       <h2 class="text-3xl font-bold text-text">類別管理</h2>
     </div>
-    <button (click)='addCategory()' class="soft-btn soft-btn-primary px-6">
+    <button (click)='openAdd()' class="soft-btn soft-btn-primary px-6">
       <fa-icon [icon]="faPlus" class="mr-2"></fa-icon>
       新增類別
     </button>
@@ -22,22 +22,25 @@
        [cdkDropListData]="(categories$ | async) || []">
     
     @for (cat of categories$ | async; track cat.id) {
-      <div class="soft-card flex items-center justify-between p-4 group cursor-move active:scale-95 active:shadow-soft-inset transition-transform"
+      <div class="soft-card flex items-center justify-between p-4 group cursor-move active:scale-95 transition-transform"
            cdkDrag>
         
         <!-- Drag Placeholder -->
         <div class="custom-placeholder" *cdkDragPlaceholder></div>
 
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
-             <fa-icon [icon]="faGripLines" class="text-xs opacity-30 mr-1" cdkDragHandle></fa-icon>
-             <span>{{ cat.name.charAt(0) }}</span>
+          <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl relative">
+             <fa-icon [icon]="faGripLines" class="text-[8px] opacity-30 absolute left-1 top-1" cdkDragHandle></fa-icon>
+             
+             <!-- Show Icon if set, else show first letter -->
+             <fa-icon *ngIf="cat.icon" [icon]="getCategoryIcon(cat.icon)"></fa-icon>
+             <span *ngIf="!cat.icon" class="font-black uppercase">{{ cat.name.charAt(0) }}</span>
           </div>
           <span class="font-bold text-text text-lg">{{ cat.name }}</span>
         </div>
 
         <div class="flex items-center gap-2">
-           <button (click)="editCategory(cat)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-colors">
+           <button (click)="openEdit(cat)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-colors">
              <fa-icon [icon]="faEdit" size="sm"></fa-icon>
            </button>
            <button (click)="deleteCategory(cat)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-colors">
@@ -48,8 +51,14 @@
     } @empty {
       <div class="col-span-full py-20 text-center text-text-light opacity-60">
         <p>尚未建立自定義類別。</p>
-        <p class="text-sm">系統將暫時使用預設類別。</p>
       </div>
     }
   </div>
+
+  <app-category-dialog 
+    *ngIf="showDialog" 
+    [category]="selectedCategory" 
+    [nextOrder]="currentCount"
+    (close)="closeDialog()">
+  </app-category-dialog>
 </div>

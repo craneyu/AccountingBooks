@@ -4,15 +4,15 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TripService } from '../../../core/services/trip.service';
 import { ExpenseService } from '../../../core/services/expense.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { Trip } from '../../../core/models/trip.model';
 import { Expense } from '../../../core/models/expense.model';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
-  faChartPie, faArrowLeft, faCalendarDay, faUtensils, 
-  faBus, faBed, faShoppingBag, faFilm, faTag, faPills,
-  faWallet, faCreditCard, faMobileAlt, faCoins
+  faChartPie, faArrowLeft, faCalendarDay, faCreditCard, faWallet, faMobileAlt, faCoins, faTag
 } from '@fortawesome/free-solid-svg-icons';
-import { Observable, switchMap, map, of, tap } from 'rxjs';
+import { getIcon } from '../../../core/utils/icon-utils';
+import { Observable } from 'rxjs';
 
 interface StatItem {
   name: string;
@@ -32,18 +32,32 @@ interface StatItem {
 export class StatisticsComponent implements OnInit {
   private tripService = inject(TripService);
   private expenseService = inject(ExpenseService);
+  private categoryService = inject(CategoryService);
 
   trips$: Observable<Trip[]> = this.tripService.getAllTrips();
   selectedTripId = signal<string>('');
   
   expenses = signal<Expense[]>([]);
   loading = signal(false);
+  
+  // Category Map for Icons
+  categoryIconMap = signal<Record<string, string>>({});
 
   // Icons
   faChartPie = faChartPie;
   faArrowLeft = faArrowLeft;
   faCalendarDay = faCalendarDay;
   faCreditCard = faCreditCard;
+
+  constructor() {
+    this.categoryService.getCategories().subscribe(cats => {
+      const map: Record<string, string> = {};
+      cats.forEach(c => {
+        if (c.icon) map[c.name] = c.icon;
+      });
+      this.categoryIconMap.set(map);
+    });
+  }
 
   // Computed Stats
   totalTWD = computed(() => {
@@ -126,16 +140,9 @@ export class StatisticsComponent implements OnInit {
     });
   }
 
-  getCategoryIcon(category: string) {
-    switch (category) {
-      case '餐飲': return faUtensils;
-      case '交通': return faBus;
-      case '住宿': return faBed;
-      case '購物': return faShoppingBag;
-      case '娛樂': return faFilm;
-      case '藥妝': return faPills;
-      default: return faTag;
-    }
+  getCategoryIcon(categoryName: string) {
+    const iconName = this.categoryIconMap()[categoryName];
+    return getIcon(iconName);
   }
 
   getPaymentIcon(method: string) {
