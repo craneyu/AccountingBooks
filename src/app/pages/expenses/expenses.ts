@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ExpenseService } from '../../core/services/expense.service';
@@ -10,18 +10,26 @@ import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
-  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages
+  faPlus,
+  faArrowLeft,
+  faEdit,
+  faTrash,
+  faReceipt,
+  faImages,
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { getIcon } from '../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
+import Swiper from 'swiper';
+import { Navigation, Pagination } from 'swiper/modules';
 
 @Component({
   selector: 'app-expenses',
   standalone: true,
   imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './expenses.html',
-  styleUrl: './expenses.scss'
+  styleUrl: './expenses.scss',
 })
 export class ExpensesComponent {
   private route = inject(ActivatedRoute);
@@ -32,7 +40,7 @@ export class ExpensesComponent {
   tripId = this.route.snapshot.paramMap.get('tripId')!;
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
   expenses$: Observable<Expense[]> = this.expenseService.getExpenses(this.tripId);
-  
+
   categoryIconMap = signal<Record<string, string>>({});
 
   showDialog = false;
@@ -44,11 +52,11 @@ export class ExpensesComponent {
   faTrash = faTrash;
   faReceipt = faReceipt;
   faImages = faImages;
-  
+
   constructor() {
-    this.categoryService.getCategories().subscribe(cats => {
+    this.categoryService.getCategories().subscribe((cats) => {
       const map: Record<string, string> = {};
-      cats.forEach(c => {
+      cats.forEach((c) => {
         if (c.icon) map[c.name] = c.icon;
       });
       this.categoryIconMap.set(map);
@@ -76,7 +84,8 @@ export class ExpensesComponent {
   }
 
   viewReceipts(expense: Expense) {
-    const images = expense.receiptImageUrls || (expense.receiptImageUrl ? [expense.receiptImageUrl] : []);
+    const images =
+      expense.receiptImageUrls || (expense.receiptImageUrl ? [expense.receiptImageUrl] : []);
     if (images.length === 0) return;
 
     if (images.length === 1) {
@@ -91,9 +100,9 @@ export class ExpensesComponent {
         background: 'transparent',
         customClass: {
           popup: 'rounded-2xl shadow-none overflow-hidden !bg-transparent',
-          image: 'm-0 max-h-[90vh] w-auto object-contain'
+          image: 'm-0 max-h-[90vh] w-auto object-contain',
         },
-        backdrop: `rgba(0,0,0,0.9)`
+        backdrop: `rgba(0,0,0,0.9)`,
       });
     } else {
       // Multiple images - enhanced gallery
@@ -103,36 +112,27 @@ export class ExpensesComponent {
 
   private showImageGallery(images: string[]) {
     const htmlContent = `
-      <div class="photo-gallery-wrapper">
-        <div id="gallery-container" class="photo-gallery-container">
-          ${images.map((url, i) => `
-            <div class="photo-gallery-slide">
-              <img src="${url}" alt="Receipt ${i + 1}" class="photo-gallery-image">
-            </div>
-          `).join('')}
+      <div class="swiper-gallery-wrapper">
+        <div class="swiper" id="receipt-swiper">
+          <div class="swiper-wrapper">
+            ${images
+              .map(
+                (url, i) => `
+              <div class="swiper-slide">
+                <img src="${url}" alt="Receipt ${i + 1}" class="swiper-image">
+              </div>
+            `,
+              )
+              .join('')}
+          </div>
+
+          <!-- Navigation -->
+          <div class="swiper-button-prev"></div>
+          <div class="swiper-button-next"></div>
+
+          <!-- Pagination -->
+          <div class="swiper-pagination"></div>
         </div>
-
-        <!-- Navigation Buttons -->
-        <button id="prevBtn" class="photo-nav-btn photo-nav-prev" aria-label="Previous image">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-        </button>
-        <button id="nextBtn" class="photo-nav-btn photo-nav-next" aria-label="Next image">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        </button>
-
-        <!-- Indicators -->
-        <div class="photo-indicators" id="indicators">
-          ${images.map((_, i) => `
-            <button class="photo-indicator ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Go to image ${i + 1}"></button>
-          `).join('')}
-        </div>
-
-        <!-- Counter -->
-        <div id="counter" class="photo-counter">1 / ${images.length}</div>
       </div>
     `;
 
@@ -146,205 +146,92 @@ export class ExpensesComponent {
       customClass: {
         popup: '!bg-transparent shadow-none !w-screen !max-w-none',
         htmlContainer: '!m-0 !p-0 !overflow-visible',
-        container: 'photo-gallery-swal-container'
+        container: 'swiper-gallery-swal-container',
       },
       backdrop: `rgba(0,0,0,0.95)`,
       allowOutsideClick: true,
       didOpen: () => {
-        // IMPORTANT: Don't block touch events on the container
-        // The gallery container itself handles touch-action: pan-x
-        this.initializeGallery(images.length);
+        this.initializeSwiper();
       },
       willClose: () => {
-        // Cleanup
-        this.cleanupGallery();
-      }
+        this.cleanupSwiper();
+      },
     });
   }
 
-  private currentGalleryIndex = 0;
-  private galleryKeyHandler?: (e: KeyboardEvent) => void;
+  private swiperInstance?: Swiper;
+  private swiperKeyHandler?: (e: KeyboardEvent) => void;
 
-  private initializeGallery(imageCount: number) {
-    const container = document.getElementById('gallery-container');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const counter = document.getElementById('counter');
-    const indicators = document.querySelectorAll('.photo-indicator');
+  private initializeSwiper() {
+    // 初始化 Swiper
+    this.swiperInstance = new Swiper('#receipt-swiper', {
+      modules: [Navigation, Pagination],
+      direction: 'horizontal',
+      loop: false,
 
-    if (!container) {
-      console.error('Gallery container not found');
-      return;
-    }
+      // 啟用鍵盤控制
+      keyboard: {
+        enabled: true,
+        onlyInViewport: false,
+      },
 
-    this.currentGalleryIndex = 0;
+      // 滑鼠滾輪控制
+      mousewheel: {
+        forceToAxis: true,
+      },
 
-    // Force initial scroll to first slide
-    setTimeout(() => {
-      container.scrollLeft = 0;
-    }, 10);
+      // 分頁指示器
+      pagination: {
+        el: '.swiper-pagination',
+        type: 'bullets',
+        clickable: true,
+      },
 
-    // Update UI function
-    const updateUI = () => {
-      const scrollLeft = container.scrollLeft;
-      const containerWidth = container.clientWidth;
-      this.currentGalleryIndex = Math.round(scrollLeft / containerWidth);
+      // 導航按鈕
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
 
-      if (counter) {
-        counter.textContent = `${this.currentGalleryIndex + 1} / ${imageCount}`;
-      }
+      // 觸控設定 - 針對 iOS 最佳化
+      touchRatio: 1,
+      touchAngle: 45,
+      simulateTouch: true,
 
-      // Update indicators
-      indicators.forEach((indicator, index) => {
-        if (index === this.currentGalleryIndex) {
-          indicator.classList.add('active');
-        } else {
-          indicator.classList.remove('active');
-        }
-      });
+      // 效果設定
+      speed: 300,
 
-      // Update button visibility
-      if (prevBtn) {
-        prevBtn.style.opacity = this.currentGalleryIndex === 0 ? '0.3' : '1';
-        (prevBtn as HTMLButtonElement).disabled = this.currentGalleryIndex === 0;
-      }
-      if (nextBtn) {
-        nextBtn.style.opacity = this.currentGalleryIndex === imageCount - 1 ? '0.3' : '1';
-        (nextBtn as HTMLButtonElement).disabled = this.currentGalleryIndex === imageCount - 1;
-      }
-    };
-
-    // Navigation functions
-    const goToSlide = (index: number) => {
-      if (index < 0 || index >= imageCount) return;
-      container.scrollTo({
-        left: container.clientWidth * index,
-        behavior: 'smooth'
-      });
-    };
-
-    const nextSlide = () => {
-      if (this.currentGalleryIndex < imageCount - 1) {
-        goToSlide(this.currentGalleryIndex + 1);
-      }
-    };
-
-    const prevSlide = () => {
-      if (this.currentGalleryIndex > 0) {
-        goToSlide(this.currentGalleryIndex - 1);
-      }
-    };
-
-    // Button click handlers
-    if (nextBtn) {
-      nextBtn.onclick = (e) => {
-        e.stopPropagation();
-        nextSlide();
-      };
-    }
-    if (prevBtn) {
-      prevBtn.onclick = (e) => {
-        e.stopPropagation();
-        prevSlide();
-      };
-    }
-
-    // Indicator click handlers
-    indicators.forEach((indicator, index) => {
-      indicator.addEventListener('click', (e) => {
-        e.stopPropagation();
-        goToSlide(index);
-      });
+      // 縮放支援（可選）
+      zoom: {
+        maxRatio: 3,
+        minRatio: 1,
+      },
     });
 
-    // Scroll event listener with debounce
-    let scrollTimeout: any;
-    container.addEventListener('scroll', () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(updateUI, 50);
-    }, { passive: true });
-
-    // Keyboard navigation
-    this.galleryKeyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        prevSlide();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        nextSlide();
-      } else if (e.key === 'Escape') {
+    // 加入 ESC 鍵關閉功能
+    this.swiperKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         Swal.close();
       }
     };
-    document.addEventListener('keydown', this.galleryKeyHandler);
-
-    // Touch scrolling is handled natively by CSS touch-action: pan-x
-    // No custom touch event handlers needed - let the browser handle it!
-
-    // Mouse drag support for desktop - horizontal only
-    let isDragging = false;
-    let startX = 0;
-    let scrollLeftStart = 0;
-
-    container.addEventListener('mousedown', (e) => {
-      // Only allow drag if not clicking on buttons
-      if ((e.target as HTMLElement).closest('button')) return;
-
-      isDragging = true;
-      startX = e.pageX;
-      scrollLeftStart = container.scrollLeft;
-      container.style.cursor = 'grabbing';
-      container.style.scrollSnapType = 'none';
-      e.preventDefault();
-    });
-
-    container.addEventListener('mouseleave', () => {
-      if (isDragging) {
-        isDragging = false;
-        container.style.cursor = 'grab';
-        container.style.scrollSnapType = 'x mandatory';
-      }
-    });
-
-    container.addEventListener('mouseup', () => {
-      if (isDragging) {
-        isDragging = false;
-        container.style.cursor = 'grab';
-        container.style.scrollSnapType = 'x mandatory';
-
-        // Snap to nearest slide
-        const scrollLeft = container.scrollLeft;
-        const containerWidth = container.clientWidth;
-        const nearestIndex = Math.round(scrollLeft / containerWidth);
-        goToSlide(nearestIndex);
-      }
-    });
-
-    container.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-
-      // Only move horizontally
-      const deltaX = e.pageX - startX;
-      container.scrollLeft = scrollLeftStart - deltaX;
-    });
-
-    // Initial UI update
-    updateUI();
+    document.addEventListener('keydown', this.swiperKeyHandler);
   }
 
-  private cleanupGallery() {
-    if (this.galleryKeyHandler) {
-      document.removeEventListener('keydown', this.galleryKeyHandler);
-      this.galleryKeyHandler = undefined;
+  private cleanupSwiper() {
+    if (this.swiperInstance) {
+      this.swiperInstance.destroy(true, true);
+      this.swiperInstance = undefined;
     }
-    this.currentGalleryIndex = 0;
+    if (this.swiperKeyHandler) {
+      document.removeEventListener('keydown', this.swiperKeyHandler);
+      this.swiperKeyHandler = undefined;
+    }
   }
 
   async delete(expense: Expense) {
     const result = await Swal.fire({
       title: '確定要刪除嗎？',
-      text: "刪除後將無法復原！",
+      text: '刪除後將無法復原！',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e53e3e',
@@ -354,8 +241,8 @@ export class ExpensesComponent {
       background: '#e0e5ec',
       color: '#2d3748',
       customClass: {
-        popup: 'rounded-2xl shadow-soft'
-      }
+        popup: 'rounded-2xl shadow-soft',
+      },
     });
 
     if (result.isConfirmed) {
@@ -367,7 +254,7 @@ export class ExpensesComponent {
         timer: 1500,
         showConfirmButton: false,
         background: '#e0e5ec',
-        color: '#2d3748'
+        color: '#2d3748',
       });
     }
   }
