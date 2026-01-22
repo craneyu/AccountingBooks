@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ExpenseService } from '../../core/services/expense.service';
@@ -9,8 +9,8 @@ import { Trip } from '../../core/models/trip.model';
 import { Observable } from 'rxjs';
 import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { 
-  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages, faTag, faChevronLeft, faChevronRight 
+import {
+  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { getIcon } from '../../core/utils/icon-utils';
@@ -80,6 +80,7 @@ export class ExpensesComponent {
     if (images.length === 0) return;
 
     if (images.length === 1) {
+      // Single image - simple view
       Swal.fire({
         imageUrl: images[0],
         imageAlt: 'Receipt',
@@ -95,60 +96,252 @@ export class ExpensesComponent {
         backdrop: `rgba(0,0,0,0.9)`
       });
     } else {
-      // Multiple Images
-      const htmlContent = `
-        <div class="gallery-wrapper" style="position: relative; width: 100vw; height: 80vh; display: flex; align-items: center; justify-content: center;">
-          <div id="gallery-container" class="gallery-container" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100%; height: 100%; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x;">
-            ${images.map((url, i) => `
-              <div class="snap-center" style="flex: 0 0 100%; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; scroll-snap-align: center;">
-                <img src="${url}" style="max-width: 90%; max-height: 70%; object-contain: contain; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-                <div style="margin-top: 20px; color: white; font-weight: bold; background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 20px;">
-                  ${i + 1} / ${images.length}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          
-          <!-- Buttons -->
-          <button id="prevBtn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-chevron-left" style="font-size: 20px;"></i>
-          </button>
-          <button id="nextBtn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-chevron-right" style="font-size: 20px;"></i>
-          </button>
+      // Multiple images - enhanced gallery
+      this.showImageGallery(images);
+    }
+  }
+
+  private showImageGallery(images: string[]) {
+    const htmlContent = `
+      <div class="photo-gallery-wrapper">
+        <div id="gallery-container" class="photo-gallery-container">
+          ${images.map((url, i) => `
+            <div class="photo-gallery-slide">
+              <img src="${url}" alt="Receipt ${i + 1}" class="photo-gallery-image">
+            </div>
+          `).join('')}
         </div>
-      `;
 
-      Swal.fire({
-        html: htmlContent,
-        showConfirmButton: false,
-        showCloseButton: true,
-        width: '100vw',
-        padding: '0',
-        background: 'transparent',
-        customClass: {
-          popup: '!bg-transparent shadow-none !w-screen !max-w-none',
-          htmlContainer: '!m-0 !p-0 !overflow-visible'
-        },
-        backdrop: `rgba(0,0,0,0.95)`,
-        didOpen: () => {
-          const container = document.getElementById('gallery-container');
-          const nextBtn = document.getElementById('nextBtn');
-          const prevBtn = document.getElementById('prevBtn');
+        <!-- Navigation Buttons -->
+        <button id="prevBtn" class="photo-nav-btn photo-nav-prev" aria-label="Previous image">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button id="nextBtn" class="photo-nav-btn photo-nav-next" aria-label="Next image">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
 
-          if (container && nextBtn && prevBtn) {
-            nextBtn.onclick = (e) => {
-              e.stopPropagation();
-              container.scrollBy({ left: container.clientWidth, behavior: 'smooth' });
-            };
-            prevBtn.onclick = (e) => {
-              e.stopPropagation();
-              container.scrollBy({ left: -container.clientWidth, behavior: 'smooth' });
-            };
-          }
+        <!-- Indicators -->
+        <div class="photo-indicators" id="indicators">
+          ${images.map((_, i) => `
+            <button class="photo-indicator ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Go to image ${i + 1}"></button>
+          `).join('')}
+        </div>
+
+        <!-- Counter -->
+        <div id="counter" class="photo-counter">1 / ${images.length}</div>
+      </div>
+    `;
+
+    Swal.fire({
+      html: htmlContent,
+      showConfirmButton: false,
+      showCloseButton: true,
+      width: '100vw',
+      padding: '0',
+      background: 'transparent',
+      customClass: {
+        popup: '!bg-transparent shadow-none !w-screen !max-w-none',
+        htmlContainer: '!m-0 !p-0 !overflow-visible'
+      },
+      backdrop: `rgba(0,0,0,0.95)`,
+      // Prevent SweetAlert2 from interfering with touch events
+      allowOutsideClick: true,
+      didOpen: () => {
+        // Ensure the container doesn't have conflicting touch handlers
+        const swalContainer = document.querySelector('.swal2-container');
+        if (swalContainer) {
+          (swalContainer as HTMLElement).style.touchAction = 'none';
+        }
+        this.initializeGallery(images.length);
+      },
+      willClose: () => {
+        // Cleanup
+        this.cleanupGallery();
+      }
+    });
+  }
+
+  private currentGalleryIndex = 0;
+  private galleryKeyHandler?: (e: KeyboardEvent) => void;
+
+  private initializeGallery(imageCount: number) {
+    const container = document.getElementById('gallery-container');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const counter = document.getElementById('counter');
+    const indicators = document.querySelectorAll('.photo-indicator');
+
+    if (!container) {
+      console.error('Gallery container not found');
+      return;
+    }
+
+    this.currentGalleryIndex = 0;
+
+    // Force initial scroll to first slide
+    setTimeout(() => {
+      container.scrollLeft = 0;
+    }, 10);
+
+    // Update UI function
+    const updateUI = () => {
+      const scrollLeft = container.scrollLeft;
+      const containerWidth = container.clientWidth;
+      this.currentGalleryIndex = Math.round(scrollLeft / containerWidth);
+
+      if (counter) {
+        counter.textContent = `${this.currentGalleryIndex + 1} / ${imageCount}`;
+      }
+
+      // Update indicators
+      indicators.forEach((indicator, index) => {
+        if (index === this.currentGalleryIndex) {
+          indicator.classList.add('active');
+        } else {
+          indicator.classList.remove('active');
         }
       });
+
+      // Update button visibility
+      if (prevBtn) {
+        prevBtn.style.opacity = this.currentGalleryIndex === 0 ? '0.3' : '1';
+        (prevBtn as HTMLButtonElement).disabled = this.currentGalleryIndex === 0;
+      }
+      if (nextBtn) {
+        nextBtn.style.opacity = this.currentGalleryIndex === imageCount - 1 ? '0.3' : '1';
+        (nextBtn as HTMLButtonElement).disabled = this.currentGalleryIndex === imageCount - 1;
+      }
+    };
+
+    // Navigation functions
+    const goToSlide = (index: number) => {
+      if (index < 0 || index >= imageCount) return;
+      container.scrollTo({
+        left: container.clientWidth * index,
+        behavior: 'smooth'
+      });
+    };
+
+    const nextSlide = () => {
+      if (this.currentGalleryIndex < imageCount - 1) {
+        goToSlide(this.currentGalleryIndex + 1);
+      }
+    };
+
+    const prevSlide = () => {
+      if (this.currentGalleryIndex > 0) {
+        goToSlide(this.currentGalleryIndex - 1);
+      }
+    };
+
+    // Button click handlers
+    if (nextBtn) {
+      nextBtn.onclick = (e) => {
+        e.stopPropagation();
+        nextSlide();
+      };
     }
+    if (prevBtn) {
+      prevBtn.onclick = (e) => {
+        e.stopPropagation();
+        prevSlide();
+      };
+    }
+
+    // Indicator click handlers
+    indicators.forEach((indicator, index) => {
+      indicator.addEventListener('click', (e) => {
+        e.stopPropagation();
+        goToSlide(index);
+      });
+    });
+
+    // Scroll event listener with debounce
+    let scrollTimeout: any;
+    container.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateUI, 50);
+    }, { passive: true });
+
+    // Keyboard navigation
+    this.galleryKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'Escape') {
+        Swal.close();
+      }
+    };
+    document.addEventListener('keydown', this.galleryKeyHandler);
+
+    // Touch scrolling is handled natively by CSS touch-action: pan-x
+    // No custom touch event handlers needed - let the browser handle it!
+
+    // Mouse drag support for desktop - horizontal only
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeftStart = 0;
+
+    container.addEventListener('mousedown', (e) => {
+      // Only allow drag if not clicking on buttons
+      if ((e.target as HTMLElement).closest('button')) return;
+
+      isDragging = true;
+      startX = e.pageX;
+      scrollLeftStart = container.scrollLeft;
+      container.style.cursor = 'grabbing';
+      container.style.scrollSnapType = 'none';
+      e.preventDefault();
+    });
+
+    container.addEventListener('mouseleave', () => {
+      if (isDragging) {
+        isDragging = false;
+        container.style.cursor = 'grab';
+        container.style.scrollSnapType = 'x mandatory';
+      }
+    });
+
+    container.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        container.style.cursor = 'grab';
+        container.style.scrollSnapType = 'x mandatory';
+
+        // Snap to nearest slide
+        const scrollLeft = container.scrollLeft;
+        const containerWidth = container.clientWidth;
+        const nearestIndex = Math.round(scrollLeft / containerWidth);
+        goToSlide(nearestIndex);
+      }
+    });
+
+    container.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      // Only move horizontally
+      const deltaX = e.pageX - startX;
+      container.scrollLeft = scrollLeftStart - deltaX;
+    });
+
+    // Initial UI update
+    updateUI();
+  }
+
+  private cleanupGallery() {
+    if (this.galleryKeyHandler) {
+      document.removeEventListener('keydown', this.galleryKeyHandler);
+      this.galleryKeyHandler = undefined;
+    }
+    this.currentGalleryIndex = 0;
   }
 
   async delete(expense: Expense) {
