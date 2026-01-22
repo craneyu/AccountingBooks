@@ -13,52 +13,76 @@
     </button>
   </div>
 
-  <p class="text-sm text-text-light opacity-70">提示：可直接拖曳卡片進行排序</p>
+  <p class="text-sm text-text-light opacity-70">提示：按住左側拖曳圖示可調整順序</p>
 
   <!-- Category List -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" 
-       cdkDropList 
+  <div class="space-y-3 max-w-4xl"
+       cdkDropList
        (cdkDropListDropped)="drop($event)"
-       [cdkDropListData]="(categories$ | async) || []">
-    
-    @for (cat of categories$ | async; track cat.id) {
-      <div class="soft-card flex items-center justify-between p-4 group cursor-move active:scale-95 transition-transform"
-           cdkDrag>
-        
-        <!-- Drag Placeholder -->
-        <div class="custom-placeholder" *cdkDragPlaceholder></div>
+       [cdkDropListLockAxis]="'y'"
+       [cdkDropListAutoScrollStep]="10">
 
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl relative">
-             <fa-icon [icon]="faGripLines" class="text-[8px] opacity-30 absolute left-1 top-1" cdkDragHandle></fa-icon>
-             
-             <!-- Show Icon if set, else show first letter -->
-             <fa-icon *ngIf="cat.icon" [icon]="getCategoryIcon(cat.icon)"></fa-icon>
-             <span *ngIf="!cat.icon" class="font-black uppercase">{{ cat.name.charAt(0) }}</span>
+    @for (cat of categories(); track cat.id) {
+      <div class="category-card soft-card flex items-center justify-between p-4 group transition-all duration-200"
+           cdkDrag
+           [cdkDragBoundary]="'.space-y-3'">
+
+        <!-- Drag Preview -->
+        <div class="category-drag-preview soft-card flex items-center p-4 opacity-90" *cdkDragPreview>
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+              @if (cat.icon) {
+                <fa-icon [icon]="getCategoryIcon(cat.icon)"></fa-icon>
+              } @else {
+                <span class="font-black uppercase">{{ cat.name.charAt(0) }}</span>
+              }
+            </div>
+            <span class="font-bold text-text text-lg">{{ cat.name }}</span>
           </div>
-          <span class="font-bold text-text text-lg">{{ cat.name }}</span>
         </div>
 
-        <div class="flex items-center gap-2">
-           <button (click)="openEdit(cat)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-colors">
+        <!-- Drag Placeholder -->
+        <div class="category-placeholder" *cdkDragPlaceholder></div>
+
+        <!-- Drag Handle -->
+        <div class="drag-handle flex items-center justify-center w-10 h-10 -ml-2 text-text-light cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100 transition-opacity touch-none"
+             cdkDragHandle>
+          <fa-icon [icon]="faGripVertical" size="lg"></fa-icon>
+        </div>
+
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl flex-shrink-0">
+             <!-- Show Icon if set, else show first letter -->
+             @if (cat.icon) {
+               <fa-icon [icon]="getCategoryIcon(cat.icon)"></fa-icon>
+             } @else {
+               <span class="font-black uppercase">{{ cat.name.charAt(0) }}</span>
+             }
+          </div>
+          <span class="font-bold text-text text-lg truncate">{{ cat.name }}</span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-shrink-0">
+           <button (click)="openEdit(cat)" class="w-9 h-9 rounded-full flex items-center justify-center text-text-light hover:text-primary hover:bg-primary/10 transition-colors">
              <fa-icon [icon]="faEdit" size="sm"></fa-icon>
            </button>
-           <button (click)="deleteCategory(cat)" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-colors">
+           <button (click)="deleteCategory(cat)" class="w-9 h-9 rounded-full flex items-center justify-center text-text-light hover:text-danger hover:bg-danger/10 transition-colors">
              <fa-icon [icon]="faTrash" size="sm"></fa-icon>
            </button>
         </div>
       </div>
     } @empty {
-      <div class="col-span-full py-20 text-center text-text-light opacity-60">
+      <div class="py-20 text-center text-text-light opacity-60">
         <p>尚未建立自定義類別。</p>
       </div>
     }
   </div>
 
-  <app-category-dialog 
-    *ngIf="showDialog" 
-    [category]="selectedCategory" 
-    [nextOrder]="currentCount"
-    (close)="closeDialog()">
-  </app-category-dialog>
+  @if (showDialog) {
+    <app-category-dialog
+      [category]="selectedCategory"
+      [nextOrder]="currentCount"
+      (close)="closeDialog()">
+    </app-category-dialog>
+  }
 </div>

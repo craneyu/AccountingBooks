@@ -1,0 +1,66 @@
+// Drag and Drop Styles
+.category-card {
+  &.cdk-drag-animating {
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &.cdk-drag-disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+.cdk-drop-list-dragging .category-card:not(.cdk-drag-placeholder) {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Drag placeholder - shows where item will be dropped
+.category-placeholder {
+  min-height: 72px;
+  background: rgba(79, 209, 197, 0.1);
+  border: 2px dashed rgba(79, 209, 197, 0.4);
+  border-radius: 1rem;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Drag preview - follows cursor while dragging
+.category-drag-preview {
+  min-width: 300px;
+  max-width: 500px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: rotate(2deg);
+  cursor: grabbing !important;
+}
+
+// Drag handle
+.drag-handle {
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Improve touch targets on mobile
+@media (max-width: 768px) {
+  .drag-handle {
+    width: 48px;
+    height: 48px;
+    opacity: 0.6;
+  }
+
+  .category-card {
+    padding: 1rem 0.75rem;
+  }
+
+  .category-drag-preview {
+    min-width: 250px;
+  }
+}
+
+// Smooth scrolling during drag
+.space-y-3 {
+  scroll-behavior: smooth;
+}

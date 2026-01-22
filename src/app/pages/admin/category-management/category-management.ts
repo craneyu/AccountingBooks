@@ -1,16 +1,16 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../../../core/services/category.service';
 import { Category } from '../../../core/models/category.model';
-import { Observable, take } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faArrowLeft, faPlus, faEdit, faTrash, faGripLines } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPlus, faEdit, faTrash, faGripVertical } from '@fortawesome/free-solid-svg-icons';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { CategoryDialogComponent } from '../../../components/category-dialog/category-dialog';
 import { getIcon } from '../../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-category-management',
@@ -22,13 +22,15 @@ import Swal from 'sweetalert2';
 export class CategoryManagementComponent {
   private categoryService = inject(CategoryService);
 
-  categories$: Observable<Category[]> = this.categoryService.getCategories();
-  
+  // Use signals for better reactivity
+  private categoriesFromDB = toSignal(this.categoryService.getCategories(), { initialValue: [] });
+  categories = signal<Category[]>([]);
+
   faArrowLeft = faArrowLeft;
   faPlus = faPlus;
   faEdit = faEdit;
   faTrash = faTrash;
-  faGripLines = faGripLines;
+  faGripVertical = faGripVertical;
 
   // Dialog state
   showDialog = false;
@@ -36,7 +38,12 @@ export class CategoryManagementComponent {
   currentCount = 0;
 
   constructor() {
-    this.categories$.subscribe(list => this.currentCount = list.length);
+    // Sync DB data to local signal
+    effect(() => {
+      const dbCategories = this.categoriesFromDB();
+      this.categories.set([...dbCategories]);
+      this.currentCount = dbCategories.length;
+    });
   }
 
   getCategoryIcon(iconName: string | undefined) {
@@ -44,16 +51,28 @@ export class CategoryManagementComponent {
   }
 
   async drop(event: CdkDragDrop<Category[]>) {
-    this.categories$.pipe(take(1)).subscribe(async (currentCategories) => {
-      const newArray = [...currentCategories];
-      moveItemInArray(newArray, event.previousIndex, event.currentIndex);
-      
-      try {
-        await this.categoryService.updateOrders(newArray);
-      } catch (error) {
-        Swal.fire('錯誤', '排序更新失敗', 'error');
-      }
-    });
+    const currentCategories = this.categories();
+    const newArray = [...currentCategories];
+    moveItemInArray(newArray, event.previousIndex, event.currentIndex);
+
+    // Update local state immediately for smooth UX
+    this.categories.set(newArray);
+
+    try {
+      await this.categoryService.updateOrders(newArray);
+      Swal.fire({
+        icon: 'success',
+        title: '排序已更新',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    } catch (error) {
+      // Revert on error
+      this.categories.set(currentCategories);
+      Swal.fire('錯誤', '排序更新失敗', 'error');
+    }
   }
 
   openAdd() {
