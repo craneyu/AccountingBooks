@@ -34,6 +34,9 @@
             ],
             "polyfills": [
               "zone.js"
+            ],
+            "allowedCommonJsDependencies": [
+              "sweetalert2"
             ]
           },
           "configurations": {
