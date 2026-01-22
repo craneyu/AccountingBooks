@@ -12,21 +12,19 @@
       <h3 class="text-xl font-bold text-text">系統設定</h3>
     </div>
 
-    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="max-w-md">
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-text-light mb-1">網站名稱</label>
-        <div class="flex gap-4">
-          <input type="text" formControlName="siteName" class="soft-input flex-1" placeholder="輸入網站名稱">
-          <button type="submit" [disabled]="settingsForm.invalid || loading" class="soft-btn soft-btn-primary whitespace-nowrap px-6">
-            <fa-icon [icon]="faSave" class="mr-2"></fa-icon>
-            {{ loading ? '儲存中...' : '儲存' }}
-          </button>
-        </div>
+    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="max-w-2xl">
+      <div class="flex items-center gap-4">
+        <label class="text-sm font-medium text-text-light whitespace-nowrap">網站名稱</label>
+        <input type="text" formControlName="siteName" class="soft-input flex-1" placeholder="輸入網站名稱">
+        <button type="submit" [disabled]="settingsForm.invalid || loading" class="soft-btn soft-btn-primary whitespace-nowrap px-6">
+          <fa-icon [icon]="faSave" class="mr-2"></fa-icon>
+          {{ loading ? '儲存中...' : '儲存' }}
+        </button>
       </div>
     </form>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- Trip Management -->
     <a routerLink="/admin/trips" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
       <div class="flex items-center gap-4 mb-4">
@@ -47,6 +45,17 @@
         <h3 class="text-xl font-bold text-text">使用者管理</h3>
       </div>
       <p class="text-text-light">管理使用者角色、權限與帳號狀態。</p>
+    </a>
+
+    <!-- Category Management -->
+    <a routerLink="/admin/categories" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+          <fa-icon [icon]="faTags"></fa-icon>
+        </div>
+        <h3 class="text-xl font-bold text-text">類別管理</h3>
+      </div>
+      <p class="text-text-light">管理支出類別清單，自定義分類項目。</p>
     </a>
 
     <!-- Statistics -->
