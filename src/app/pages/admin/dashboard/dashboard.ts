@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faSuitcase, faUsers, faChartLine, faCog, faSave, faTags } from '@fortawesome/free-solid-svg-icons';
+import { faSuitcase, faUsers, faChartLine, faCog, faSave, faTags, faWallet } from '@fortawesome/free-solid-svg-icons';
 import { SystemSettingsService } from '../../../core/services/system-settings.service';
 import Swal from 'sweetalert2';
 
@@ -24,6 +24,7 @@ export class AdminDashboardComponent implements OnInit {
   faCog = faCog;
   faSave = faSave;
   faTags = faTags;
+  faWallet = faWallet;
 
   settingsForm!: FormGroup;
   loading = false;

@@ -5,7 +5,10 @@ import { ExpenseService } from '../../core/services/expense.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
+import { PaymentMethodService } from '../../core/services/payment-method.service';
 import { Expense } from '../../core/models/expense.model';
+import { Category } from '../../core/models/category.model';
+import { PaymentMethod } from '../../core/models/payment-method.model';
 import { Timestamp } from 'firebase/firestore';
 import { Storage } from '@angular/fire/storage';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -33,6 +36,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   private exchangeRateService = inject(ExchangeRateService);
   private authService = inject(AuthService);
   private categoryService = inject(CategoryService);
+  private paymentMethodService = inject(PaymentMethodService);
   private storage = inject(Storage);
 
   form!: FormGroup;
@@ -47,8 +51,8 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
 
   // Constants & State
   currencies = ['TWD', 'JPY', 'USD', 'EUR', 'KRW', 'CNY', 'THB', 'GBP'];
-  categories: string[] = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他']; // Defaults
-  paymentMethods = ['現金', '信用卡', '行動支付'];
+  categories: string[] = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他']; // Default fallback
+  paymentMethods: string[] = ['現金', '信用卡', '行動支付']; // Default fallback
 
   newFiles: File[] = [];
   previewUrls: { url: string, isNew: boolean, file?: File }[] = [];
@@ -95,6 +99,13 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
     this.categoryService.getCategories().subscribe(cats => {
       if (cats && cats.length > 0) {
         this.categories = cats.map(c => c.name);
+      }
+    });
+
+    // Load dynamic payment methods
+    this.paymentMethodService.getPaymentMethods().subscribe(methods => {
+      if (methods && methods.length > 0) {
+        this.paymentMethods = methods.map(m => m.name);
       }
     });
 

@@ -24,7 +24,7 @@
     </form>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
     <!-- Trip Management -->
     <a routerLink="/admin/trips" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
       <div class="flex items-center gap-4 mb-4">
@@ -56,6 +56,17 @@
         <h3 class="text-xl font-bold text-text">類別管理</h3>
       </div>
       <p class="text-text-light">管理支出類別清單，自定義分類項目。</p>
+    </a>
+
+    <!-- Payment Method Management -->
+    <a routerLink="/admin/payment-methods" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-2xl group-hover:bg-primary group-hover:text-white transition-colors">
+          <fa-icon [icon]="faWallet"></fa-icon>
+        </div>
+        <h3 class="text-xl font-bold text-text">支付方式</h3>
+      </div>
+      <p class="text-text-light">管理支付工具，自定義如現金、悠遊卡等。</p>
     </a>
 
     <!-- Statistics -->
