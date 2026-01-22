@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { SystemSettingsService } from '../../core/services/system-settings.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-login',
@@ -18,13 +19,16 @@ export class LoginComponent {
   
   settings = this.settingsService.settings;
   faGoogle = faGoogle;
+  faSpinner = faSpinner;
+
+  loading = signal(false);
 
   async login() {
+    this.loading.set(true);
     try {
       await this.authService.loginWithGoogle();
     } catch (error) {
-      // Error handling is done in service/global error handler usually, 
-      // but could add specific UI feedback here.
+      this.loading.set(false);
     }
   }
 }

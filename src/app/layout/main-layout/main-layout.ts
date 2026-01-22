@@ -4,7 +4,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { SystemSettingsService } from '../../core/services/system-settings.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faSignOutAlt, faUser, faSuitcaseRolling } from '@fortawesome/free-solid-svg-icons';
+import { faSignOutAlt, faUser, faSuitcaseRolling, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-main-layout',
@@ -19,10 +19,12 @@ export class MainLayoutComponent {
   
   currentUser = this.authService.currentUser;
   settings = this.settingsService.settings;
+  isInitialized = this.authService.isInitialized;
   
   faSignOutAlt = faSignOutAlt;
   faUser = faUser;
   faSuitcaseRolling = faSuitcaseRolling;
+  faSpinner = faSpinner;
 
   logout() {
     this.authService.logout();
