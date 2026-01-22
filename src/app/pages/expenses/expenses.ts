@@ -10,7 +10,7 @@ import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
   faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages,
-  faUtensils, faBus, faBed, faShoppingBag, faFilm, faEllipsisH, faTag 
+  faUtensils, faBus, faBed, faShoppingBag, faFilm, faEllipsisH, faTag, faPills 
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import Swal from 'sweetalert2';
@@ -51,6 +51,8 @@ export class ExpensesComponent {
       case '住宿': return faBed;
       case '購物': return faShoppingBag;
       case '娛樂': return faFilm;
+      case '藥妝': return faPills;
+      case '醫療': return faReceipt;
       default: return faTag; // 將原本的 faEllipsisH (...) 改為 faTag
     }
   }

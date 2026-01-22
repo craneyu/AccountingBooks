@@ -9,7 +9,7 @@ import { Expense } from '../../../core/models/expense.model';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
   faChartPie, faArrowLeft, faCalendarDay, faUtensils, 
-  faBus, faBed, faShoppingBag, faFilm, faEllipsisH, 
+  faBus, faBed, faShoppingBag, faFilm, faTag, faPills,
   faWallet, faCreditCard, faMobileAlt, faCoins
 } from '@fortawesome/free-solid-svg-icons';
 import { Observable, switchMap, map, of, tap } from 'rxjs';
@@ -97,13 +97,12 @@ export class StatisticsComponent implements OnInit {
       .map(([name, amount]) => ({
         name,
         amount,
-        percentage: 0 // Not using percentage for daily usually
+        percentage: 0 
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
   ngOnInit() {
-    // Optionally auto-select first trip
     this.trips$.subscribe(trips => {
       if (trips.length > 0 && !this.selectedTripId()) {
         this.onTripChange(trips[0].id!);
@@ -134,7 +133,8 @@ export class StatisticsComponent implements OnInit {
       case '住宿': return faBed;
       case '購物': return faShoppingBag;
       case '娛樂': return faFilm;
-      default: return faEllipsisH;
+      case '藥妝': return faPills;
+      default: return faTag;
     }
   }
 
