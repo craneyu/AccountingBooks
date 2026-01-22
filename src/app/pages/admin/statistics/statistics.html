@@ -1,0 +1,133 @@
+<div class="animate-fade-in-up space-y-8 pb-12">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <a routerLink="/admin/dashboard" class="soft-btn-icon text-text-light">
+        <fa-icon [icon]="faArrowLeft"></fa-icon>
+      </a>
+      <h2 class="text-3xl font-bold text-text">費用統計分析</h2>
+    </div>
+
+    <!-- Trip Selector -->
+    <div class="w-full md:w-64">
+      <select 
+        [ngModel]="selectedTripId()" 
+        (ngModelChange)="onTripChange($event)"
+        class="soft-select w-full !bg-white">
+        <option value="" disabled>請選擇旅程</option>
+        <option *ngFor="let trip of trips$ | async" [value]="trip.id">{{ trip.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="py-20 text-center text-text-light">
+    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+    <p>計算數據中...</p>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!loading() && selectedTripId()">
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <div class="soft-card bg-primary text-white">
+          <div class="flex items-center gap-4">
+             <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl">
+                <fa-icon [icon]="faChartPie"></fa-icon>
+             </div>
+             <div>
+                <p class="text-white/80 text-sm font-medium">總支出 (TWD)</p>
+                <h3 class="text-3xl font-bold">{{ totalTWD() | number }}</h3>
+             </div>
+          </div>
+       </div>
+       <div class="soft-card">
+          <div class="flex items-center gap-4">
+             <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-2xl">
+                <fa-icon [icon]="faCalendarDay"></fa-icon>
+             </div>
+             <div>
+                <p class="text-text-light text-sm font-medium">記錄天數</p>
+                <h3 class="text-3xl font-bold text-text">{{ dailyStats().length }} 天</h3>
+             </div>
+          </div>
+       </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Category Distribution -->
+      <div class="soft-card space-y-6">
+        <h3 class="text-xl font-bold text-text flex items-center gap-2">
+           <fa-icon [icon]="faChartPie" class="text-primary"></fa-icon>
+           類別支出佔比
+        </h3>
+        
+        <div class="space-y-4">
+          <div *ngFor="let item of categoryStats()" class="space-y-1">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2">
+                 <fa-icon [icon]="item.icon" class="text-text-light w-5 text-center"></fa-icon>
+                 <span class="font-bold text-text">{{ item.name }}</span>
+              </div>
+              <span class="text-text-light">{{ item.amount | number }} TWD ({{ item.percentage | number:'1.1-1' }}%)</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+               <div class="h-full bg-primary transition-all duration-1000" [style.width.%]="item.percentage"></div>
+            </div>
+          </div>
+          <div *ngIf="categoryStats().length === 0" class="text-center py-8 text-text-light opacity-60">尚無類別資料</div>
+        </div>
+      </div>
+
+      <!-- Payment Method Distribution -->
+      <div class="soft-card space-y-6">
+        <h3 class="text-xl font-bold text-text flex items-center gap-2">
+           <fa-icon [icon]="faCreditCard" class="text-primary"></fa-icon>
+           支付方式分析
+        </h3>
+        
+        <div class="space-y-4">
+          <div *ngFor="let item of paymentStats()" class="space-y-1">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2">
+                 <fa-icon [icon]="item.icon" class="text-text-light w-5 text-center"></fa-icon>
+                 <span class="font-bold text-text">{{ item.name }}</span>
+              </div>
+              <span class="text-text-light">{{ item.amount | number }} TWD ({{ item.percentage | number:'1.1-1' }}%)</span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+               <div class="h-full bg-indigo-400 transition-all duration-1000" [style.width.%]="item.percentage"></div>
+            </div>
+          </div>
+          <div *ngIf="paymentStats().length === 0" class="text-center py-8 text-text-light opacity-60">尚無支付資料</div>
+        </div>
+      </div>
+
+      <!-- Daily Spending List -->
+      <div class="soft-card lg:col-span-2 space-y-6">
+         <h3 class="text-xl font-bold text-text flex items-center gap-2">
+           <fa-icon [icon]="faCalendarDay" class="text-primary"></fa-icon>
+           每日支出明細
+         </h3>
+         
+         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div *ngFor="let day of dailyStats()" class="p-4 bg-surface rounded-2xl shadow-soft-sm border border-white/40">
+               <p class="text-xs text-text-light font-medium mb-1">{{ day.name | date:'MM/dd' }}</p>
+               <h4 class="text-lg font-bold text-text">{{ day.amount | number }} <small class="text-xs font-normal opacity-60">TWD</small></h4>
+            </div>
+            <div *ngIf="dailyStats().length === 0" class="col-span-full text-center py-8 text-text-light opacity-60">尚無日期資料</div>
+         </div>
+      </div>
+
+    </div>
+
+  </ng-container>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && !selectedTripId()" class="text-center py-20 text-text-light opacity-60">
+     <fa-icon [icon]="faChartPie" class="text-6xl mb-4 block"></fa-icon>
+     <p>請從上方下拉選單選擇一個旅程以查看分析。</p>
+  </div>
+</div>
