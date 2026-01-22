@@ -1,18 +1,19 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../../../core/services/category.service';
 import { Category } from '../../../core/models/category.model';
-import { Observable } from 'rxjs';
+import { Observable, take } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faArrowLeft, faPlus, faEdit, faTrash, faSave, faTimes, faGripLines } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPlus, faEdit, faTrash, faGripLines } from '@fortawesome/free-solid-svg-icons';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-category-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, FontAwesomeModule],
+  imports: [CommonModule, RouterModule, FormsModule, FontAwesomeModule, DragDropModule],
   templateUrl: './category-management.html',
   styleUrl: './category-management.scss'
 })
@@ -25,9 +26,21 @@ export class CategoryManagementComponent {
   faPlus = faPlus;
   faEdit = faEdit;
   faTrash = faTrash;
-  faSave = faSave;
-  faTimes = faTimes;
   faGripLines = faGripLines;
+
+  async drop(event: CdkDragDrop<Category[]>) {
+    this.categories$.pipe(take(1)).subscribe(async (currentCategories) => {
+      const newArray = [...currentCategories];
+      moveItemInArray(newArray, event.previousIndex, event.currentIndex);
+      
+      try {
+        await this.categoryService.updateOrders(newArray);
+        // Toast notification optional, UI will update automatically via observable
+      } catch (error) {
+        Swal.fire('錯誤', '排序更新失敗', 'error');
+      }
+    });
+  }
 
   async addCategory() {
     const { value: name } = await Swal.fire({
@@ -42,11 +55,13 @@ export class CategoryManagementComponent {
 
     if (name) {
       try {
-        await this.categoryService.addCategory({
-          name,
-          order: 99 // Default to end
+        this.categories$.pipe(take(1)).subscribe(async (list) => {
+            await this.categoryService.addCategory({
+                name,
+                order: list.length
+            });
+            Swal.fire({ icon: 'success', title: '已新增', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
         });
-        Swal.fire({ icon: 'success', title: '已新增', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
       } catch (error) {
         Swal.fire('錯誤', '新增失敗', 'error');
       }

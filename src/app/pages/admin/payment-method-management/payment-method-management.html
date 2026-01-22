@@ -13,12 +13,21 @@
     </button>
   </div>
 
+  <p class="text-sm text-text-light opacity-70">提示：可直接拖曳卡片進行排序</p>
+
   <!-- Method List -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+       cdkDropList 
+       (cdkDropListDropped)="drop($event)"
+       [cdkDropListData]="(methods$ | async) || []">
+    
     @for (method of methods$ | async; track method.id) {
-      <div class="soft-card flex items-center justify-between p-4 group">
+      <div class="soft-card flex items-center justify-between p-4 group cursor-move active:scale-95 transition-transform"
+           cdkDrag>
+        
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">
+             <fa-icon [icon]="faGripLines" class="text-xs opacity-30 mr-1" cdkDragHandle></fa-icon>
              <fa-icon [icon]="faWallet" class="text-sm opacity-50"></fa-icon>
           </div>
           <span class="font-bold text-text text-lg">{{ method.name }}</span>

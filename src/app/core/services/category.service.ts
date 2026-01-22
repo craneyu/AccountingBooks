@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, doc, addDoc, updateDoc, deleteDoc, query, orderBy } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from '@angular/fire/firestore';
 import { Category } from '../models/category.model';
 import { Observable, of } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
@@ -12,7 +12,6 @@ export class CategoryService {
   private firestore = inject(Firestore);
   private categoriesRef = collection(this.firestore, 'categories');
 
-  // Cache categories for better performance and consistency
   private categories$ = collectionData(
     query(this.categoriesRef, orderBy('order', 'asc')),
     { idField: 'id' }
@@ -42,9 +41,12 @@ export class CategoryService {
     return deleteDoc(docRef);
   }
 
-  // Helper to initialize default categories if empty
-  async initializeDefaults() {
-    const defaults = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他'];
-    // We would check if empty first, but for now we provide this as a utility
+  async updateOrders(categories: Category[]) {
+    const batch = writeBatch(this.firestore);
+    categories.forEach((cat, index) => {
+      const docRef = doc(this.firestore, 'categories', cat.id!);
+      batch.update(docRef, { order: index });
+    });
+    return batch.commit();
   }
 }

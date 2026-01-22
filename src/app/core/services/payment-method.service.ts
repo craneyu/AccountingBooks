@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, collectionData, doc, addDoc, updateDoc, deleteDoc, query, orderBy } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, doc, addDoc, updateDoc, deleteDoc, query, orderBy, writeBatch } from '@angular/fire/firestore';
 import { PaymentMethod } from '../models/payment-method.model';
 import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
@@ -39,5 +39,14 @@ export class PaymentMethodService {
   async deletePaymentMethod(id: string) {
     const docRef = doc(this.firestore, 'paymentMethods', id);
     return deleteDoc(docRef);
+  }
+
+  async updateOrders(methods: PaymentMethod[]) {
+    const batch = writeBatch(this.firestore);
+    methods.forEach((m, index) => {
+      const docRef = doc(this.firestore, 'paymentMethods', m.id!);
+      batch.update(docRef, { order: index });
+    });
+    return batch.commit();
   }
 }
