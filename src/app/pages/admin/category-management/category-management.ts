@@ -8,12 +8,14 @@ import { Observable, take } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faArrowLeft, faPlus, faEdit, faTrash, faGripLines } from '@fortawesome/free-solid-svg-icons';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CategoryDialogComponent } from '../../../components/category-dialog/category-dialog';
+import { getIcon } from '../../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-category-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, FontAwesomeModule, DragDropModule],
+  imports: [CommonModule, RouterModule, FormsModule, FontAwesomeModule, DragDropModule, CategoryDialogComponent],
   templateUrl: './category-management.html',
   styleUrl: './category-management.scss'
 })
@@ -28,6 +30,19 @@ export class CategoryManagementComponent {
   faTrash = faTrash;
   faGripLines = faGripLines;
 
+  // Dialog state
+  showDialog = false;
+  selectedCategory: Category | null = null;
+  currentCount = 0;
+
+  constructor() {
+    this.categories$.subscribe(list => this.currentCount = list.length);
+  }
+
+  getCategoryIcon(iconName: string | undefined) {
+    return getIcon(iconName);
+  }
+
   async drop(event: CdkDragDrop<Category[]>) {
     this.categories$.pipe(take(1)).subscribe(async (currentCategories) => {
       const newArray = [...currentCategories];
@@ -35,64 +50,31 @@ export class CategoryManagementComponent {
       
       try {
         await this.categoryService.updateOrders(newArray);
-        // Toast notification optional, UI will update automatically via observable
       } catch (error) {
         Swal.fire('錯誤', '排序更新失敗', 'error');
       }
     });
   }
 
-  async addCategory() {
-    const { value: name } = await Swal.fire({
-      title: '新增類別',
-      input: 'text',
-      inputLabel: '類別名稱',
-      inputPlaceholder: '例如：醫療、保險...',
-      showCancelButton: true,
-      confirmButtonText: '新增',
-      cancelButtonText: '取消'
-    });
-
-    if (name) {
-      try {
-        this.categories$.pipe(take(1)).subscribe(async (list) => {
-            await this.categoryService.addCategory({
-                name,
-                order: list.length
-            });
-            Swal.fire({ icon: 'success', title: '已新增', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-        });
-      } catch (error) {
-        Swal.fire('錯誤', '新增失敗', 'error');
-      }
-    }
+  openAdd() {
+    this.selectedCategory = null;
+    this.showDialog = true;
   }
 
-  async editCategory(category: Category) {
-    const { value: name } = await Swal.fire({
-      title: '編輯類別',
-      input: 'text',
-      inputLabel: '類別名稱',
-      inputValue: category.name,
-      showCancelButton: true,
-      confirmButtonText: '儲存',
-      cancelButtonText: '取消'
-    });
+  openEdit(category: Category) {
+    this.selectedCategory = category;
+    this.showDialog = true;
+  }
 
-    if (name && name !== category.name) {
-      try {
-        await this.categoryService.updateCategory(category.id!, { name });
-        Swal.fire({ icon: 'success', title: '已更新', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-      } catch (error) {
-        Swal.fire('錯誤', '更新失敗', 'error');
-      }
-    }
+  closeDialog() {
+    this.showDialog = false;
+    this.selectedCategory = null;
   }
 
   async deleteCategory(category: Category) {
     const result = await Swal.fire({
       title: '確定要刪除此類別嗎？',
-      text: `類別：${category.name}。刪除後不會影響舊有支出，但之後新增支出將無法選擇。`,
+      text: `類別：${category.name}。`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#e53e3e',

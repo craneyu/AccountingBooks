@@ -1,18 +1,19 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ExpenseService } from '../../core/services/expense.service';
 import { TripService } from '../../core/services/trip.service';
+import { CategoryService } from '../../core/services/category.service';
 import { Expense } from '../../core/models/expense.model';
 import { Trip } from '../../core/models/trip.model';
 import { Observable } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { shareReplay, tap } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
-  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages,
-  faUtensils, faBus, faBed, faShoppingBag, faFilm, faEllipsisH, faTag, faPills 
+  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages, faTag 
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
+import { getIcon } from '../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -26,10 +27,14 @@ export class ExpensesComponent {
   private route = inject(ActivatedRoute);
   private expenseService = inject(ExpenseService);
   private tripService = inject(TripService);
+  private categoryService = inject(CategoryService);
 
   tripId = this.route.snapshot.paramMap.get('tripId')!;
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
   expenses$: Observable<Expense[]> = this.expenseService.getExpenses(this.tripId);
+  
+  // Category Map for Icons
+  categoryIconMap = signal<Record<string, string>>({});
 
   // Dialog State
   showDialog = false;
@@ -43,18 +48,25 @@ export class ExpensesComponent {
   faReceipt = faReceipt;
   faImages = faImages;
   
-  // Category Icons Map
-  getCategoryIcon(category: string) {
-    switch (category) {
-      case '餐飲': return faUtensils;
-      case '交通': return faBus;
-      case '住宿': return faBed;
-      case '購物': return faShoppingBag;
-      case '娛樂': return faFilm;
-      case '藥妝': return faPills;
-      case '醫療': return faReceipt;
-      default: return faTag; // 將原本的 faEllipsisH (...) 改為 faTag
-    }
+  constructor() {
+    // Load categories to build icon map
+    this.categoryService.getCategories().subscribe(cats => {
+      const map: Record<string, string> = {};
+      cats.forEach(c => {
+        if (c.icon) map[c.name] = c.icon;
+      });
+      this.categoryIconMap.set(map);
+    });
+  }
+
+  getCategoryIcon(categoryName: string) {
+    const iconName = this.categoryIconMap()[categoryName];
+    return getIcon(iconName);
+  }
+
+  isFallbackIcon(categoryName: string): boolean {
+    const iconName = this.categoryIconMap()[categoryName];
+    return !iconName;
   }
 
   openAdd() {
@@ -87,7 +99,6 @@ export class ExpensesComponent {
         backdrop: `rgba(0,0,0,0.9)`
       });
     } else {
-      // Multiple Images Gallery with Swipe Support
       const htmlContent = `
         <div class="relative group">
           <div class="gallery-container flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-0 w-full">
@@ -100,7 +111,6 @@ export class ExpensesComponent {
               </div>
             `).join('')}
           </div>
-          <!-- Swipe Hint for mobile -->
           <div class="absolute bottom-12 left-0 right-0 flex justify-center pointer-events-none md:hidden">
              <div class="bg-black/50 text-white px-3 py-1 rounded-full text-xs animate-pulse">
                ⬅ 左右滑動切換 ➡

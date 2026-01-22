@@ -68,7 +68,12 @@
           <div *ngFor="let item of categoryStats()" class="space-y-1">
             <div class="flex items-center justify-between text-sm">
               <div class="flex items-center gap-2">
-                 <fa-icon [icon]="item.icon" class="text-text-light w-5 text-center"></fa-icon>
+                 <div class="w-8 h-8 rounded-lg bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xs relative overflow-hidden">
+                    <fa-icon [icon]="item.icon"></fa-icon>
+                    @if (item.icon.iconName === 'tag') {
+                      <span class="absolute inset-0 flex items-center justify-center font-black uppercase mt-0.5">{{ item.name.charAt(0) }}</span>
+                    }
+                 </div>
                  <span class="font-bold text-text">{{ item.name }}</span>
               </div>
               <span class="text-text-light">{{ item.amount | number }} TWD ({{ item.percentage | number:'1.1-1' }}%)</span>

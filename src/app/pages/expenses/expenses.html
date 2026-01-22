@@ -25,9 +25,9 @@
              <!-- Show dynamic icon -->
              <fa-icon [icon]="getCategoryIcon(expense.category)"></fa-icon>
              
-             <!-- If it's a fallback tag icon, overlay the first letter for custom categories -->
-             @if (getCategoryIcon(expense.category).iconName === 'tag') {
-               <span class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase mt-1 opacity-40">
+             <!-- If no icon defined, show the first letter -->
+             @if (isFallbackIcon(expense.category)) {
+               <span class="absolute inset-0 flex items-center justify-center font-black uppercase mt-1">
                  {{ expense.category.charAt(0) }}
                </span>
              }
