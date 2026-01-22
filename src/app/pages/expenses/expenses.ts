@@ -7,10 +7,10 @@ import { CategoryService } from '../../core/services/category.service';
 import { Expense } from '../../core/models/expense.model';
 import { Trip } from '../../core/models/trip.model';
 import { Observable } from 'rxjs';
-import { shareReplay, tap } from 'rxjs/operators';
+import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { 
-  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages, faTag 
+  faPlus, faArrowLeft, faEdit, faTrash, faReceipt, faImages, faTag, faChevronLeft, faChevronRight 
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { getIcon } from '../../core/utils/icon-utils';
@@ -33,14 +33,11 @@ export class ExpensesComponent {
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
   expenses$: Observable<Expense[]> = this.expenseService.getExpenses(this.tripId);
   
-  // Category Map for Icons
   categoryIconMap = signal<Record<string, string>>({});
 
-  // Dialog State
   showDialog = false;
   selectedExpense: Expense | null = null;
 
-  // Icons
   faPlus = faPlus;
   faArrowLeft = faArrowLeft;
   faEdit = faEdit;
@@ -49,7 +46,6 @@ export class ExpensesComponent {
   faImages = faImages;
   
   constructor() {
-    // Load categories to build icon map
     this.categoryService.getCategories().subscribe(cats => {
       const map: Record<string, string> = {};
       cats.forEach(c => {
@@ -81,7 +77,6 @@ export class ExpensesComponent {
 
   viewReceipts(expense: Expense) {
     const images = expense.receiptImageUrls || (expense.receiptImageUrl ? [expense.receiptImageUrl] : []);
-    
     if (images.length === 0) return;
 
     if (images.length === 1) {
@@ -92,31 +87,35 @@ export class ExpensesComponent {
         showCloseButton: true,
         width: 'auto',
         padding: '0',
+        background: 'transparent',
         customClass: {
-          popup: 'rounded-2xl shadow-soft overflow-hidden !bg-transparent',
+          popup: 'rounded-2xl shadow-none overflow-hidden !bg-transparent',
           image: 'm-0 max-h-[90vh] w-auto object-contain'
         },
         backdrop: `rgba(0,0,0,0.9)`
       });
     } else {
+      // Multiple Images
       const htmlContent = `
-        <div class="gallery-wrapper">
-          <div class="gallery-container">
+        <div class="gallery-wrapper" style="position: relative; width: 100vw; height: 80vh; display: flex; align-items: center; justify-content: center;">
+          <div id="gallery-container" class="gallery-container" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; width: 100%; height: 100%; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x;">
             ${images.map((url, i) => `
-              <div class="snap-center p-4">
-                <img src="${url}" class="max-w-full max-h-[70vh] object-contain shadow-2xl rounded-lg">
-                <div class="mt-6 text-white text-lg font-bold bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-white/10">
+              <div class="snap-center" style="flex: 0 0 100%; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; scroll-snap-align: center;">
+                <img src="${url}" style="max-width: 90%; max-height: 70%; object-contain: contain; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                <div style="margin-top: 20px; color: white; font-weight: bold; background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 20px;">
                   ${i + 1} / ${images.length}
                 </div>
               </div>
             `).join('')}
           </div>
-          <!-- Swipe Hint -->
-          <div class="absolute bottom-10 left-0 right-0 flex justify-center pointer-events-none md:hidden">
-             <div class="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce border-2 border-white/20">
-               ⬅ 左右滑動切換照片 ➡
-             </div>
-          </div>
+          
+          <!-- Buttons -->
+          <button id="prevBtn" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-chevron-left" style="font-size: 20px;"></i>
+          </button>
+          <button id="nextBtn" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; border: none; background: rgba(255,255,255,0.2); color: white; cursor: pointer; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-chevron-right" style="font-size: 20px;"></i>
+          </button>
         </div>
       `;
 
@@ -131,7 +130,23 @@ export class ExpensesComponent {
           popup: '!bg-transparent shadow-none !w-screen !max-w-none',
           htmlContainer: '!m-0 !p-0 !overflow-visible'
         },
-        backdrop: `rgba(0,0,0,0.95)`
+        backdrop: `rgba(0,0,0,0.95)`,
+        didOpen: () => {
+          const container = document.getElementById('gallery-container');
+          const nextBtn = document.getElementById('nextBtn');
+          const prevBtn = document.getElementById('prevBtn');
+
+          if (container && nextBtn && prevBtn) {
+            nextBtn.onclick = (e) => {
+              e.stopPropagation();
+              container.scrollBy({ left: container.clientWidth, behavior: 'smooth' });
+            };
+            prevBtn.onclick = (e) => {
+              e.stopPropagation();
+              container.scrollBy({ left: -container.clientWidth, behavior: 'smooth' });
+            };
+          }
+        }
       });
     }
   }
