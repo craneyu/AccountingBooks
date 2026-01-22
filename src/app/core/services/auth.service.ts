@@ -1,7 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Auth, GoogleAuthProvider, signInWithPopup, signOut, user, User as FirebaseUser } from '@angular/fire/auth';
-import { Firestore } from '@angular/fire/firestore';
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { Firestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, Timestamp, deleteDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { User } from '../models/user.model';
 import { of } from 'rxjs';
@@ -66,29 +65,44 @@ export class AuthService {
 
     if (userSnap.exists()) {
       const userData = userSnap.data() as User;
-      // Temporary: Force admin for dev
-      if (!userData.isAdmin) {
-         await updateDoc(userRef, { isAdmin: true, lastLoginAt: now });
-         userData.isAdmin = true;
-      } else {
-         await updateDoc(userRef, { lastLoginAt: now });
-      }
+      await updateDoc(userRef, { lastLoginAt: now });
       return userData;
     } else {
+      // Check if a pre-registered user exists with this email
+      const usersRef = collection(this.firestore, 'users');
+      const q = query(usersRef, where('email', '==', firebaseUser.email));
+      const querySnap = await getDocs(q);
+
+      let isAdmin = false;
+      let status: 'active' | 'inactive' = 'active';
+
+      if (!querySnap.empty) {
+        // Pre-registered user found!
+        const preRegDoc = querySnap.docs[0];
+        const preRegData = preRegDoc.data() as User;
+        isAdmin = preRegData.isAdmin;
+        status = preRegData.status;
+
+        // Delete the pre-registered doc so we can create a new one with correct UID as ID
+        if (preRegDoc.id !== firebaseUser.uid) {
+           await deleteDoc(preRegDoc.ref);
+        }
+      }
+
       const newUser: User = {
         id: firebaseUser.uid,
         email: firebaseUser.email || '',
         displayName: firebaseUser.displayName || 'User',
         photoURL: firebaseUser.photoURL || undefined,
-        isAdmin: true, // Temporary: Force admin for dev
-        status: 'active',
+        isAdmin: isAdmin,
+        status: status,
         createdAt: now,
         updatedAt: now,
         lastLoginAt: now
       };
+      
       await setDoc(userRef, newUser);
       return newUser;
     }
   }
 }
-

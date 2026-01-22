@@ -6,12 +6,13 @@ import { User } from '../../../core/models/user.model';
 import { Observable } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faArrowLeft, faUserShield, faUser, faUserSlash, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { UserDialogComponent } from '../../../components/user-dialog/user-dialog';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, UserDialogComponent],
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss'
 })
@@ -19,6 +20,7 @@ export class UserManagementComponent {
   private userService = inject(UserService);
 
   users$: Observable<User[]> = this.userService.getUsers();
+  showDialog = false;
 
   faArrowLeft = faArrowLeft;
   faUserShield = faUserShield;
@@ -26,6 +28,14 @@ export class UserManagementComponent {
   faUserSlash = faUserSlash;
   faCheckCircle = faCheckCircle;
   faTimesCircle = faTimesCircle;
+
+  openAdd() {
+    this.showDialog = true;
+  }
+
+  closeDialog() {
+    this.showDialog = false;
+  }
 
   async toggleAdmin(user: User) {
     const action = user.isAdmin ? '移除' : '設為';

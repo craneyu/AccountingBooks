@@ -1,0 +1,61 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+  <div class="soft-card w-full max-w-md flex flex-col relative animate-scale-in">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-text">新增使用者</h2>
+      <button (click)="cancel()" class="w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:text-danger transition-colors">
+        <fa-icon [icon]="faTimes"></fa-icon>
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+      
+      <!-- Email -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">Email (登入帳號)</label>
+        <input type="email" formControlName="email" class="soft-input" placeholder="example@gmail.com">
+      </div>
+
+      <!-- Display Name -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">顯示名稱</label>
+        <input type="text" formControlName="displayName" class="soft-input" placeholder="例如：王小明">
+      </div>
+
+      <!-- Role & Status -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">角色</label>
+          <select formControlName="isAdmin" class="soft-select">
+            <option [ngValue]="false">一般使用者</option>
+            <option [ngValue]="true">管理員</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-light mb-1">初始狀態</label>
+          <select formControlName="status" class="soft-select">
+            <option value="active">正常</option>
+            <option value="inactive">停用</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Hint -->
+      <div class="p-3 bg-blue-50 rounded-xl text-xs text-blue-600 border border-blue-100">
+        <p>提示：預先建立後，當使用者使用此 Email 登入時，系統會自動套用此處設定的權限。</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-4">
+        <button type="button" (click)="cancel()" class="soft-btn flex-1 bg-gray-200">取消</button>
+        <button type="submit" [disabled]="form.invalid || loading" class="soft-btn soft-btn-primary flex-1">
+          <span *ngIf="!loading">建立</span>
+          <span *ngIf="loading"><fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon></span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
