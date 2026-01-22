@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { SystemSettingsService } from '../../core/services/system-settings.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faSignOutAlt, faUser, faSuitcaseRolling } from '@fortawesome/free-solid-svg-icons';
 
@@ -14,7 +15,10 @@ import { faSignOutAlt, faUser, faSuitcaseRolling } from '@fortawesome/free-solid
 })
 export class MainLayoutComponent {
   authService = inject(AuthService);
+  settingsService = inject(SystemSettingsService);
+  
   currentUser = this.authService.currentUser;
+  settings = this.settingsService.settings;
   
   faSignOutAlt = faSignOutAlt;
   faUser = faUser;

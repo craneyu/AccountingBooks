@@ -48,8 +48,8 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   categories = ['餐飲', '交通', '住宿', '購物', '娛樂', '其他'];
   paymentMethods = ['現金', '信用卡', '行動支付'];
 
-  selectedFile: File | null = null;
-  previewUrl: string | null = null;
+  newFiles: File[] = [];
+  previewUrls: { url: string, isNew: boolean, file?: File }[] = [];
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['tripCurrency']) {
@@ -89,8 +89,11 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       note: [this.expense?.note || '']
     });
 
-    if (this.expense?.receiptImageUrl) {
-        this.previewUrl = this.expense.receiptImageUrl;
+    // Initialize Previews
+    if (this.expense?.receiptImageUrls && this.expense.receiptImageUrls.length > 0) {
+        this.previewUrls = this.expense.receiptImageUrls.map(url => ({ url, isNew: false }));
+    } else if (this.expense?.receiptImageUrl) {
+        this.previewUrls = [{ url: this.expense.receiptImageUrl, isNew: false }];
     }
 
     // Watch Currency Changes
@@ -137,27 +140,38 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
     }
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.previewUrl = e.target.result;
-      };
-      reader.readAsDataURL(file);
+  onFilesSelected(event: any) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      Array.from(files).forEach((file: any) => {
+        this.newFiles.push(file);
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.previewUrls.push({ url: e.target.result, isNew: true, file: file });
+        };
+        reader.readAsDataURL(file);
+      });
     }
   }
 
-  async uploadFile(): Promise<string | null> {
-    if (!this.selectedFile) return null;
+  removeImage(index: number) {
+    const item = this.previewUrls[index];
+    if (item.isNew && item.file) {
+      // Remove from newFiles
+      this.newFiles = this.newFiles.filter(f => f !== item.file);
+    }
+    // Remove from previews (which also tracks "final" list)
+    this.previewUrls.splice(index, 1);
+  }
+
+  async uploadSingleFile(file: File): Promise<string | null> {
     try {
-        // Compress image before upload (Max 1024px, 0.8 quality)
-        const compressedBlob = await compressImage(this.selectedFile, 1024, 1024, 0.8);
+        // Compress image before upload
+        const compressedBlob = await compressImage(file, 1024, 1024, 0.8);
         
-        // Use .jpg extension for the compressed file
-        const fileName = this.selectedFile.name.substring(0, this.selectedFile.name.lastIndexOf('.')) || this.selectedFile.name;
-        const path = `receipts/${this.tripId}/${new Date().getTime()}_${fileName}.jpg`;
+        // Use .jpg extension
+        const fileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const path = `receipts/${this.tripId}/${new Date().getTime()}_${Math.random().toString(36).substring(7)}_${fileName}.jpg`;
         
         const storageRef = ref(this.storage, path);
         const result = await uploadBytes(storageRef, compressedBlob);
@@ -176,14 +190,24 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       const formVal = this.form.value;
       const user = this.authService.currentUser();
       
-      // Upload image if selected
-      let imageUrl = this.expense?.receiptImageUrl;
-      if (this.selectedFile) {
-        this.uploading = true;
-        const url = await this.uploadFile();
-        if (url) imageUrl = url;
-        this.uploading = false;
-      }
+      // Upload new images
+      this.uploading = true;
+      const uploadedUrls: string[] = [];
+      
+      // 1. Keep existing URLs that weren't removed
+      const existingUrls = this.previewUrls.filter(p => !p.isNew).map(p => p.url);
+      uploadedUrls.push(...existingUrls);
+
+      // 2. Upload new files
+      const uploadPromises = this.newFiles.map(file => this.uploadSingleFile(file));
+      const newUrls = await Promise.all(uploadPromises);
+      
+      // Filter out failed uploads
+      newUrls.forEach(url => {
+        if (url) uploadedUrls.push(url);
+      });
+      
+      this.uploading = false;
 
       const expenseData: any = {
         tripId: this.tripId,
@@ -192,14 +216,14 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
         amount: Number(formVal.amount),
         currency: formVal.currency,
         exchangeRate: Number(formVal.exchangeRate),
-        exchangeRateTime: Timestamp.now(), // Should track when rate was fetched, but now is ok
+        exchangeRateTime: Timestamp.now(), 
         amountInTWD: Number(formVal.amountInTWD),
         category: formVal.category,
         paymentMethod: formVal.paymentMethod,
         note: formVal.note,
-        receiptImageUrl: imageUrl,
+        receiptImageUrls: uploadedUrls,
+        receiptImageUrl: uploadedUrls.length > 0 ? uploadedUrls[0] : null, // Backward compat
         updatedAt: Timestamp.now(),
-        // If edit, these might not change but for simplicity:
       };
 
       if (this.expense) {

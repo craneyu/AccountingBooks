@@ -57,10 +57,23 @@
         </div>
       </div>
 
-       <!-- Cover Image URL (Simple for now) -->
-       <div>
-        <label class="block text-sm font-medium text-text-light mb-1">封面圖片網址</label>
-        <input type="text" formControlName="coverImage" class="soft-input" placeholder="https://...">
+      <!-- Cover Image -->
+      <div>
+        <label class="block text-sm font-medium text-text-light mb-1">封面照片</label>
+        <div class="flex items-center gap-4">
+           <button type="button" (click)="fileInput.click()" class="soft-btn text-sm py-2 px-3 bg-gray-100 flex items-center gap-2">
+             <fa-icon [icon]="faCamera"></fa-icon> <span>{{ previewUrl ? '更換照片' : '新增照片' }}</span>
+           </button>
+           <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden">
+           <span *ngIf="selectedFile" class="text-xs text-text-light truncate max-w-[150px]">{{ selectedFile.name }}</span>
+        </div>
+        
+        <div *ngIf="previewUrl" class="mt-3 relative rounded-xl overflow-hidden shadow-soft-inset bg-gray-100 flex justify-center">
+           <img [src]="previewUrl" class="max-h-56 h-auto w-auto object-contain">
+           <button type="button" (click)="previewUrl = null; selectedFile = null; form.patchValue({coverImage: null})" class="absolute top-1 right-1 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-500">
+             <fa-icon [icon]="faTimes" size="sm"></fa-icon>
+           </button>
+        </div>
       </div>
 
       <!-- Actions -->

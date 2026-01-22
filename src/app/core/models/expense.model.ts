@@ -12,7 +12,8 @@ export interface Expense {
   amountInTWD: number;
   category: string;
   paymentMethod: string;
-  receiptImageUrl?: string;
+  receiptImageUrl?: string; // @deprecated Use receiptImageUrls
+  receiptImageUrls?: string[];
   note?: string;
   submittedAt: Timestamp;
   submittedBy: string;

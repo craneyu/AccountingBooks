@@ -5,8 +5,11 @@ import { TripService } from '../../core/services/trip.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Trip } from '../../core/models/trip.model';
 import { Timestamp } from 'firebase/firestore';
+import { Storage } from '@angular/fire/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faSpinner, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { compressImage } from '../../core/utils/image-utils';
 
 @Component({
   selector: 'app-trip-dialog',
@@ -22,11 +25,18 @@ export class TripDialogComponent {
   private fb = inject(FormBuilder);
   private tripService = inject(TripService);
   private authService = inject(AuthService);
+  private storage = inject(Storage);
 
   form: FormGroup;
   loading = false;
+  uploading = false;
+  
   faTimes = faTimes;
   faSpinner = faSpinner;
+  faCamera = faCamera;
+
+  selectedFile: File | null = null;
+  previewUrl: string | null = null;
 
   constructor() {
     this.form = this.fb.group({
@@ -51,6 +61,41 @@ export class TripDialogComponent {
         coverImage: this.trip.coverImage,
         status: this.trip.status
       });
+
+      if (this.trip.coverImage) {
+        this.previewUrl = this.trip.coverImage;
+      }
+    }
+  }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async uploadFile(): Promise<string | null> {
+    if (!this.selectedFile) return null;
+    try {
+        // Compress image before upload (Max 1280px for covers, 0.8 quality)
+        const compressedBlob = await compressImage(this.selectedFile, 1280, 1280, 0.8);
+        
+        const fileName = this.selectedFile.name.substring(0, this.selectedFile.name.lastIndexOf('.')) || this.selectedFile.name;
+        // Use a generic 'covers' folder or trip-specific if ID exists, but safe to use timestamp
+        const path = `covers/${new Date().getTime()}_${fileName}.jpg`;
+        
+        const storageRef = ref(this.storage, path);
+        const result = await uploadBytes(storageRef, compressedBlob);
+        return await getDownloadURL(result.ref);
+    } catch (error) {
+        console.error('Upload failed', error);
+        return null;
     }
   }
 
@@ -62,13 +107,22 @@ export class TripDialogComponent {
       const formVal = this.form.value;
       const user = this.authService.currentUser();
       
+      // Upload image if selected
+      let imageUrl = formVal.coverImage;
+      if (this.selectedFile) {
+        this.uploading = true;
+        const url = await this.uploadFile();
+        if (url) imageUrl = url;
+        this.uploading = false;
+      }
+
       const tripData: any = {
         name: formVal.name,
         description: formVal.description || '',
         startDate: Timestamp.fromDate(new Date(formVal.startDate)),
         endDate: Timestamp.fromDate(new Date(formVal.endDate)),
         currency: formVal.currency,
-        coverImage: formVal.coverImage || null,
+        coverImage: imageUrl || null,
         status: formVal.status,
         updatedAt: Timestamp.now()
       };
@@ -85,6 +139,7 @@ export class TripDialogComponent {
       console.error(err);
     } finally {
       this.loading = false;
+      this.uploading = false;
     }
   }
 

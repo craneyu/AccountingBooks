@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { SystemSettingsService } from '../../core/services/system-settings.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 
@@ -13,6 +14,9 @@ import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 })
 export class LoginComponent {
   authService = inject(AuthService);
+  settingsService = inject(SystemSettingsService);
+  
+  settings = this.settingsService.settings;
   faGoogle = faGoogle;
 
   async login() {

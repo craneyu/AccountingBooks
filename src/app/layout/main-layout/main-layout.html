@@ -5,7 +5,7 @@
       <!-- Logo / Home Link -->
       <a routerLink="/" class="flex items-center gap-2 text-primary font-bold text-xl hover:opacity-80 transition-opacity">
         <fa-icon [icon]="faSuitcaseRolling" class="text-2xl"></fa-icon>
-        <span>PayState</span>
+        <span>{{ settings().siteName }}</span>
       </a>
 
       <!-- User Actions -->
@@ -34,6 +34,6 @@
 
   <!-- Footer -->
   <footer class="py-6 text-center text-text-light text-sm opacity-60">
-    <p>AccountingBooks &copy; 2026</p>
+    <p>{{ settings().siteName }} &copy; 2026</p>
   </footer>
 </div>
