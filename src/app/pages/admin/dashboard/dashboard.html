@@ -3,6 +3,29 @@
     <h2 class="text-3xl font-bold text-text">管理後台</h2>
   </div>
 
+  <!-- System Settings -->
+  <div class="soft-card">
+    <div class="flex items-center gap-4 mb-6">
+      <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-2xl">
+        <fa-icon [icon]="faCog"></fa-icon>
+      </div>
+      <h3 class="text-xl font-bold text-text">系統設定</h3>
+    </div>
+
+    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="max-w-md">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-text-light mb-1">網站名稱</label>
+        <div class="flex gap-4">
+          <input type="text" formControlName="siteName" class="soft-input flex-1" placeholder="輸入網站名稱">
+          <button type="submit" [disabled]="settingsForm.invalid || loading" class="soft-btn soft-btn-primary whitespace-nowrap px-6">
+            <fa-icon [icon]="faSave" class="mr-2"></fa-icon>
+            {{ loading ? '儲存中...' : '儲存' }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- Trip Management -->
     <a routerLink="/admin/trips" class="soft-card group hover:-translate-y-1 transition-transform duration-300">
@@ -36,28 +59,5 @@
       </div>
       <p class="text-text-light">查看各旅程的支出統計與分析圖表。</p>
     </a>
-  </div>
-
-  <!-- System Settings -->
-  <div class="soft-card">
-    <div class="flex items-center gap-4 mb-6">
-      <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-2xl">
-        <fa-icon [icon]="faCog"></fa-icon>
-      </div>
-      <h3 class="text-xl font-bold text-text">系統設定</h3>
-    </div>
-
-    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="max-w-md">
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-text-light mb-1">網站名稱</label>
-        <div class="flex gap-4">
-          <input type="text" formControlName="siteName" class="soft-input flex-1" placeholder="輸入網站名稱">
-          <button type="submit" [disabled]="settingsForm.invalid || loading" class="soft-btn soft-btn-primary whitespace-nowrap px-6">
-            <fa-icon [icon]="faSave" class="mr-2"></fa-icon>
-            {{ loading ? '儲存中...' : '儲存' }}
-          </button>
-        </div>
-      </div>
-    </form>
   </div>
 </div>
