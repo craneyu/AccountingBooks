@@ -21,8 +21,16 @@
         
         <div class="flex items-center gap-4 flex-1">
           <!-- Icon -->
-          <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xl flex-shrink-0">
+          <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xl flex-shrink-0 relative overflow-hidden">
+             <!-- Show dynamic icon -->
              <fa-icon [icon]="getCategoryIcon(expense.category)"></fa-icon>
+             
+             <!-- If it's a fallback tag icon, overlay the first letter for custom categories -->
+             @if (getCategoryIcon(expense.category).iconName === 'tag') {
+               <span class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase mt-1 opacity-40">
+                 {{ expense.category.charAt(0) }}
+               </span>
+             }
           </div>
           
           <div class="min-w-0">
