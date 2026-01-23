@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy, addDoc, setDoc, deleteDoc } from '@angular/fire/firestore';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { User } from '../models/user.model';
 import { Observable } from 'rxjs';
 import { Timestamp } from 'firebase/firestore';
@@ -9,6 +10,7 @@ import { Timestamp } from 'firebase/firestore';
 })
 export class UserService {
   private firestore = inject(Firestore);
+  private functions = inject(Functions);
 
   getUsers(): Observable<User[]> {
     const usersRef = collection(this.firestore, 'users');
@@ -92,5 +94,13 @@ export class UserService {
     const requested = deleteRequestedAt.toDate();
     const remainingMs = 7 * 24 * 60 * 60 * 1000 - (now.getTime() - requested.getTime());
     return Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+  }
+
+  /**
+   * 同步所有使用者的 photoURL（管理員功能）
+   */
+  async syncAllUsersPhotoURL(): Promise<any> {
+    const syncFn = httpsCallable(this.functions, 'syncAllUsersPhotoURL');
+    return syncFn({});
   }
 }

@@ -402,6 +402,119 @@ async function markUserExpensesAsDeleted(userId: string): Promise<void> {
 }
 
 /**
+ * 同步所有使用者的 photoURL 從 Firebase Auth
+ * 允許管理員調用來更新所有使用者的頭像資訊
+ */
+export const syncAllUsersPhotoURL = functions.https.onCall(async (data, context) => {
+  // 檢查是否認證
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', '未認證');
+  }
+
+  // 檢查是否為管理員
+  const adminUserDoc = await db.collection('users').doc(context.auth.uid).get();
+  const adminUser = adminUserDoc.data() as any;
+  if (!adminUser?.isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', '只有管理員可以執行此操作');
+  }
+
+  try {
+    const auth = admin.auth();
+    const usersSnapshot = await db.collection('users').get();
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userId = userDoc.id;
+      const userData = userDoc.data() as any;
+
+      try {
+        // 從 Firebase Auth 取得使用者資訊
+        const authUser = await auth.getUser(userId);
+
+        // 如果 Auth 中有 photoURL，更新 Firestore
+        if (authUser.photoURL) {
+          await db.collection('users').doc(userId).update({
+            photoURL: authUser.photoURL,
+            displayName: authUser.displayName || userData.displayName,
+            updatedAt: Timestamp.now()
+          });
+          updated++;
+          console.log(`✓ 同步使用者 ${userId}: ${authUser.displayName}`);
+        } else {
+          // Auth 中沒有 photoURL，保持不變
+          skipped++;
+        }
+      } catch (error) {
+        console.warn(`⚠ 無法同步使用者 ${userId}:`, error);
+        skipped++;
+      }
+    }
+
+    return {
+      success: true,
+      total: usersSnapshot.docs.length,
+      updated,
+      skipped,
+      message: `同步完成：更新 ${updated} 個使用者，跳過 ${skipped} 個`
+    };
+  } catch (error) {
+    console.error('同步使用者 photoURL 失敗:', error);
+    throw new functions.https.HttpsError('internal', '同步失敗');
+  }
+});
+
+/**
+ * 每日執行：自動同步所有使用者的 photoURL
+ * 執行時間：每天 UTC 時間 01:00
+ */
+export const dailySyncUsersPhotoURL = functions.pubsub
+  .schedule('0 1 * * *')
+  .timeZone('UTC')
+  .onRun(async (context) => {
+    try {
+      const auth = admin.auth();
+      const usersSnapshot = await db.collection('users').get();
+
+      let updated = 0;
+      let skipped = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userId = userDoc.id;
+        const userData = userDoc.data() as any;
+
+        try {
+          // 從 Firebase Auth 取得使用者資訊
+          const authUser = await auth.getUser(userId);
+
+          // 如果 Auth 中有 photoURL 且 Firestore 中沒有或不同，則更新
+          if (authUser.photoURL && authUser.photoURL !== userData.photoURL) {
+            await db.collection('users').doc(userId).update({
+              photoURL: authUser.photoURL,
+              displayName: authUser.displayName || userData.displayName,
+              updatedAt: Timestamp.now()
+            });
+            updated++;
+            console.log(`✓ 同步使用者 ${userId}: ${authUser.displayName}`);
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          console.warn(`⚠ 無法同步使用者 ${userId}:`, error);
+          skipped++;
+        }
+      }
+
+      console.log(`✓ 每日同步完成：更新 ${updated} 個使用者，跳過 ${skipped} 個`);
+      return { success: true, updated, skipped };
+    } catch (error) {
+      console.error('每日同步使用者 photoURL 失敗:', error);
+      throw error;
+    }
+  });
+
+/**
  * 健康檢查函數
  */
 export const healthCheck = functions.https.onRequest(async (req, res) => {
