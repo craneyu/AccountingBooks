@@ -1,0 +1,224 @@
+<div class="space-y-6 animate-fade-in-up">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-text mb-2">幣別管理</h1>
+      <p class="text-text-light">管理系統幣別和自訂幣別</p>
+    </div>
+    <button
+      (click)="toggleAddForm()"
+      class="soft-btn soft-btn-primary flex items-center gap-2"
+    >
+      <fa-icon [icon]="faPlus"></fa-icon>
+      <span>新增幣別</span>
+    </button>
+  </div>
+
+  <!-- 新增表單 -->
+  @if (showAddForm()) {
+    <div class="soft-card p-6 bg-blue-50">
+      <h2 class="text-xl font-bold text-text mb-4">新增自訂幣別</h2>
+      <form [formGroup]="form" (ngSubmit)="addCurrency()" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <!-- 幣別代碼 -->
+          <div>
+            <label class="block text-sm font-medium text-text mb-1">
+              幣別代碼 <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              formControlName="id"
+              placeholder="e.g., CNH"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent uppercase"
+              [disabled]="addingCurrency()"
+            />
+            @if (form.get('id')?.errors?.['required'] && form.get('id')?.touched) {
+              <p class="text-danger text-sm mt-1">幣別代碼必填</p>
+            }
+          </div>
+
+          <!-- ISO 代碼 -->
+          <div>
+            <label class="block text-sm font-medium text-text mb-1">
+              ISO 代碼 <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              formControlName="code"
+              placeholder="e.g., CNH"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent uppercase"
+              maxlength="3"
+              [disabled]="addingCurrency()"
+            />
+          </div>
+
+          <!-- 幣別名稱 -->
+          <div>
+            <label class="block text-sm font-medium text-text mb-1">
+              幣別名稱 <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              formControlName="name"
+              placeholder="e.g., 人民幣離岸"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              [disabled]="addingCurrency()"
+            />
+          </div>
+
+          <!-- 符號 -->
+          <div>
+            <label class="block text-sm font-medium text-text mb-1">
+              符號 <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              formControlName="symbol"
+              placeholder="e.g., ¥"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              [disabled]="addingCurrency()"
+            />
+          </div>
+
+          <!-- 啟用狀態 -->
+          <div class="col-span-2">
+            <label class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                formControlName="isActive"
+                class="w-4 h-4 text-primary border-gray-300 rounded"
+                [disabled]="addingCurrency()"
+              />
+              <span class="text-sm text-text">啟用此幣別</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 按鈕 -->
+        <div class="flex gap-3 justify-end pt-4">
+          <button
+            type="button"
+            (click)="toggleAddForm()"
+            class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
+            [disabled]="addingCurrency()"
+          >
+            取消
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            [disabled]="form.invalid || addingCurrency()"
+          >
+            @if (addingCurrency()) {
+              <fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon>
+            }
+            新增幣別
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- 幣別列表 -->
+  <div class="soft-card">
+    <h2 class="text-xl font-bold text-text p-6 border-b">幣別列表</h2>
+
+    @if (loading()) {
+      <div class="p-8 text-center">
+        <fa-icon [icon]="faSpinner" class="text-3xl text-primary animate-spin mb-2"></fa-icon>
+        <p class="text-text-light">更新中...</p>
+      </div>
+    } @else if (sortedCurrencies().length === 0) {
+      <div class="p-8 text-center text-text-light">
+        <p>無可用的幣別</p>
+      </div>
+    } @else {
+      <div cdkDropList #currencyList="cdkDropList" [cdkDropListData]="sortedCurrencies()" (cdkDropListDropped)="onDropped($event)" class="bg-white">
+        @for (currency of sortedCurrencies(); track currency.id; let i = $index) {
+          <div
+            cdkDrag
+            class="p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors flex items-center justify-between group"
+          >
+            <!-- 拖曳把手和資訊 -->
+            <div class="flex items-center gap-4 flex-1">
+              <div
+                cdkDragHandle
+                class="text-text-light cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+                title="拖曳排序"
+              >
+                <fa-icon [icon]="faGripVertical"></fa-icon>
+              </div>
+
+              <div class="flex-1">
+                <div class="flex items-center gap-3">
+                  <span class="font-mono font-bold text-lg text-primary">{{ currency.symbol }}</span>
+                  <div>
+                    <p class="font-bold text-text">{{ currency.name }}</p>
+                    <p class="text-sm text-text-light">
+                      {{ currency.code }}
+                      @if (currency.isSystemDefault) {
+                        <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          系統預設
+                        </span>
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 狀態和操作 -->
+            <div class="flex items-center gap-3">
+              <!-- 狀態指示 -->
+              <div class="text-sm">
+                @if (currency.isActive) {
+                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                    已啟用
+                  </span>
+                } @else {
+                  <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                    已停用
+                  </span>
+                }
+              </div>
+
+              <!-- 操作按鈕 -->
+              <div class="flex gap-2">
+                <!-- 啟用/停用 -->
+                <button
+                  (click)="toggleCurrencyActive(currency)"
+                  class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  [title]="currency.isActive ? '停用' : '啟用'"
+                >
+                  {{ currency.isActive ? '停用' : '啟用' }}
+                </button>
+
+                <!-- 刪除（僅非系統幣別） -->
+                @if (!currency.isSystemDefault) {
+                  <button
+                    (click)="deleteCurrency(currency)"
+                    class="text-danger hover:text-red-700 transition-colors"
+                    title="刪除"
+                  >
+                    <fa-icon [icon]="faTrash"></fa-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- 說明 -->
+  <div class="soft-card bg-blue-50 p-4 text-sm text-text-light">
+    <h3 class="font-bold text-text mb-2">說明</h3>
+    <ul class="space-y-1 list-disc list-inside">
+      <li>系統預設幣別無法刪除但可停用</li>
+      <li>拖曳幣別項目以調整排列順序</li>
+      <li>新增的自訂幣別可在支出表單中選擇</li>
+      <li>停用的幣別將不在新增支出時顯示</li>
+    </ul>
+  </div>
+</div>

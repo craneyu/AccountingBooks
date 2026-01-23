@@ -11,6 +11,7 @@ import { UserManagementComponent } from './pages/admin/user-management/user-mana
 import { StatisticsComponent } from './pages/admin/statistics/statistics';
 import { CategoryManagementComponent } from './pages/admin/category-management/category-management';
 import { PaymentMethodManagementComponent } from './pages/admin/payment-method-management/payment-method-management';
+import { CurrenciesComponent } from './pages/admin/currencies/currencies.component';
 
 export const routes: Routes = [
   {
@@ -45,7 +46,8 @@ export const routes: Routes = [
           { path: 'users', component: UserManagementComponent },
           { path: 'stats', component: StatisticsComponent },
           { path: 'categories', component: CategoryManagementComponent },
-          { path: 'payment-methods', component: PaymentMethodManagementComponent }
+          { path: 'payment-methods', component: PaymentMethodManagementComponent },
+          { path: 'currencies', component: CurrenciesComponent }
         ]
       }
     ]
