@@ -1,5 +1,5 @@
 <div #itemContainer class="expense-item-wrapper">
-  <!-- 背景選單（會在左滑時露出） -->
+  <!-- 背景選單（手機版左滑時露出，平板版直接顯示） -->
   <div class="action-menu">
     <button class="action-btn view-btn" (click)="onViewReceipts()" *ngIf="expense.receiptImageUrls?.length || expense.receiptImageUrl" title="查看照片">
       <fa-icon [icon]="faImages"></fa-icon>
@@ -12,8 +12,8 @@
     </button>
   </div>
 
-  <!-- 內容部分（會隨著滑動而移動） -->
-  <div class="expense-content" [style.transform]="'translateX(' + slideOffset() + 'px)'">
+  <!-- 內容部分 -->
+  <div class="expense-content" [style.transform]="'translateX(0px)'">
     <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
       <!-- 左側：分類圖示 + 文字資訊 -->
       <div class="flex items-center gap-4 flex-1">
@@ -78,24 +78,4 @@
     </div>
   </div>
 
-  <!-- 手機版提示文字 -->
-  @if (isSliding()) {
-    <div class="mobile-hint">滑動操作可用</div>
-  }
-
-  <!-- 調試資訊 - 大型顯示 -->
-  <div style="position: absolute; bottom: 5px; left: 5px; z-index: 99;">
-    <!-- 主調試面板 -->
-    <div style="background: rgba(0,0,0,0.8); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; line-height: 1.8; min-width: 140px;">
-      <div style="font-size: 16px; color: #4ade80;">offset: {{ slideOffset() }}</div>
-      <div style="font-size: 12px; color: #60a5fa;">edit: {{ canEdit ? '✓' : '✗' }} | sliding: {{ isSliding() ? 'Y' : 'N' }}</div>
-      <div style="font-size: 11px; color: #fbbf24; margin-top: 4px;">{{ touchDebugInfo() }}</div>
-    </div>
-    <!-- 滑動指示器 -->
-    @if (slideOffset() !== 0) {
-      <div style="background: #ef4444; color: white; padding: 6px 10px; margin-top: 4px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center;">
-        滑動中 →
-      </div>
-    }
-  </div>
 </div>
