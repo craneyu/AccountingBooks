@@ -12,5 +12,14 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": [
+    {
+      "bucket": "accountingbooks-9fa26.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ]
 }

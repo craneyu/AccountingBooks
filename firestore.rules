@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 認證檢查
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 授權使用者檢查
+    function isAuthorizedUser() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    // 系統管理者檢查
+    function isSystemAdmin() {
+      return isAuthorizedUser()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // 檢查使用者是否為旅程成員
+    function isTripMember(tripId) {
+      return exists(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid));
+    }
+
+    // 取得旅程成員角色
+    function getTripMemberRole(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role;
+    }
+
+    // 檢查是否能編輯旅程
+    function canEditTrip(tripId) {
+      let role = getTripMemberRole(tripId);
+      return isSystemAdmin() || role == 'owner' || role == 'editor';
+    }
+
+    // 使用者資料集合
+    match /users/{userId} {
+      // 所有授權使用者可讀取使用者列表（基本資訊）
+      allow read: if isAuthorizedUser();
+      // 只有管理者可新增、修改、刪除使用者
+      allow create, update, delete: if isSystemAdmin();
+      // 使用者可更新自己的 lastLoginAt
+      allow update: if isAuthenticated() && request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']);
+    }
+
+    // 旅程集合
+    match /trips/{tripId} {
+      // 旅程成員可讀取所屬旅程
+      allow read: if isAuthorizedUser() && isTripMember(tripId);
+      // 系統管理者可讀取所有旅程
+      allow read: if isSystemAdmin();
+
+      // 授權使用者可建立新旅程（系統會自動新增為 owner）
+      allow create: if isAuthorizedUser();
+
+      // 編輯與刪除檢查
+      allow update: if isTripMember(tripId) && canEditTrip(tripId);
+      allow delete: if isSystemAdmin() || (isTripMember(tripId) && getTripMemberRole(tripId) == 'owner');
+
+      // 旅程成員 subcollection
+      match /members/{memberId} {
+        // 旅程成員可讀取成員列表
+        allow read: if isAuthorizedUser() && isTripMember(tripId);
+
+        // 旅程 owner 可管理成員
+        allow create, update, delete: if isAuthorizedUser() && isTripMember(tripId) && getTripMemberRole(tripId) == 'owner';
+      }
+
+      // 支出 subcollection
+      match /expenses/{expenseId} {
+        // 旅程成員可讀取支出
+        allow read: if isAuthorizedUser() && isTripMember(tripId);
+
+        // 有編輯權限的成員可建立支出
+        allow create: if isAuthorizedUser() && isTripMember(tripId) && canEditTrip(tripId);
+
+        // 編輯與刪除：編輯權限的成員，或支出提交者本人（viewer 除外）
+        allow update, delete: if isAuthorizedUser() && isTripMember(tripId)
+                              && (canEditTrip(tripId) || (request.auth.uid == resource.data.submittedBy && getTripMemberRole(tripId) != 'viewer'));
+      }
+    }
+
+    // 分類集合
+    match /categories/{categoryId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isSystemAdmin();
+    }
+
+    // 支付方式集合
+    match /paymentMethods/{methodId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isSystemAdmin();
+    }
+
+    // 匯率快取集合
+    match /exchangeRates/{rateId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isSystemAdmin();
+    }
+
+    // 幣別集合
+    match /currencies/{currencyId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isSystemAdmin();
+    }
+
+    // 通知集合
+    match /notifications/{notificationId} {
+      // 使用者只能讀取自己的通知
+      allow read: if isAuthorizedUser() && request.auth.uid == resource.data.userId;
+      // 系統自動建立或管理員建立
+      allow create, update, delete: if isSystemAdmin();
+    }
+  }
+}

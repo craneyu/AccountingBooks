@@ -21,4 +21,5 @@ export interface Expense {
   submittedByEmail: string;
   updatedAt: Timestamp;
   updatedBy?: string;
+  isDeletedUser?: boolean; // 新增：標記已註銷使用者
 }
