@@ -9,7 +9,8 @@ import {
   OnDestroy,
   OnInit,
   inject,
-  signal
+  signal,
+  computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Expense } from '../../core/models/expense.model';
@@ -45,6 +46,11 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   isSliding = signal(false);
   slideOffset = signal(0);
   private hammer: any;
+
+  // 計算實際的 transform 偏移（手機版允許滑動，平板版始終為 0）
+  actualSlideOffset = computed(() => {
+    return window.innerWidth < 600 ? this.slideOffset() : 0;
+  });
 
   categoryIconMap = signal<Record<string, string>>({});
 

@@ -12,8 +12,8 @@
     </button>
   </div>
 
-  <!-- 內容部分 -->
-  <div class="expense-content" [style.transform]="'translateX(0px)'">
+  <!-- 內容部分（只在手機版允許滑動） -->
+  <div class="expense-content" [style.transform]="'translateX(' + actualSlideOffset() + 'px)'">
     <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
       <!-- 左側：分類圖示 + 文字資訊 -->
       <div class="flex items-center gap-4 flex-1">
