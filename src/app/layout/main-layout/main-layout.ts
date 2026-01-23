@@ -42,6 +42,7 @@ export class MainLayoutComponent implements OnInit {
   showAccountSettings = signal(false);
 
   ngOnInit() {
+    console.log('[MainLayout] Initialized, showAccountSettings:', this.showAccountSettings());
     // 訂閱通知（如果使用者已登入）
     if (this.authService.isInitialized() && this.authService.currentUser()) {
       this.loadingNotifications.set(true);
@@ -98,13 +99,18 @@ export class MainLayoutComponent implements OnInit {
    * 打開帳號設定對話框
    */
   openAccountSettings() {
-    this.showAccountSettings.set(true);
+    console.log('[MainLayout] Opening account settings, current state:', this.showAccountSettings());
+    const newState = !this.showAccountSettings();
+    this.showAccountSettings.set(newState);
+    console.log('[MainLayout] Account settings toggled to:', newState);
   }
 
   /**
    * 關閉帳號設定對話框
    */
   closeAccountSettings() {
+    console.log('[MainLayout] Closing account settings');
     this.showAccountSettings.set(false);
+    console.log('[MainLayout] Account settings closed, new state:', this.showAccountSettings());
   }
 }
