@@ -28,7 +28,7 @@
     width: 140px;
     display: flex;
     gap: 0;
-    z-index: 1;
+    z-index: 10;
     flex-shrink: 0;
 
     // 只在寬屏桌面版隱藏手機操作菜單（寬度 >= 1025px）
