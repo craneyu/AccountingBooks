@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, ValidatorFn, AbstractControl, ValidationErrors, FormsModule } from '@angular/forms';
 import { ExpenseService } from '../../core/services/expense.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -15,13 +15,13 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faTimes, faSpinner, faSync, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { from } from 'rxjs';
 import { compressImage, validateImageFile, validateMultipleImages } from '../../core/utils/image-utils';
 
 @Component({
   selector: 'app-expense-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FontAwesomeModule],
+  imports: [CommonModule, ReactiveFormsModule, FontAwesomeModule, FormsModule],
   templateUrl: './expense-dialog.html',
   styleUrl: './expense-dialog.scss'
 })
@@ -59,7 +59,22 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   newFiles: File[] = [];
   previewUrls: { url: string, isNew: boolean, file?: File }[] = [];
 
+  // 快速添加類別和支付方式
+  showAddCategoryInput = signal(false);
+  showAddPaymentMethodInput = signal(false);
+  newCategory = signal('');
+  newPaymentMethod = signal('');
+
   ngOnChanges(changes: SimpleChanges) {
+    // 當 expense 改變時，更新表單中的日期
+    if (changes['expense'] && this.form) {
+      const expense = changes['expense'].currentValue;
+      if (expense && expense.expenseDate) {
+        const expenseDate = expense.expenseDate.toDate().toISOString().substring(0, 10);
+        this.form.patchValue({ expenseDate }, { emitEvent: false });
+      }
+    }
+
     if (changes['tripCurrency']) {
       const newCurrency = changes['tripCurrency'].currentValue;
       if (newCurrency && !this.currencies.includes(newCurrency)) {
@@ -377,6 +392,97 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       this.loading = false;
       this.uploading = false;
     }
+  }
+
+  /**
+   * 檢查日期欄位是否無效
+   */
+  isDateInvalid(): boolean {
+    const control = this.form.get('expenseDate');
+    return !!(control && control.invalid && (control.dirty || control.touched));
+  }
+
+  /**
+   * 取得日期範圍錯誤的詳細資訊
+   */
+  dateRangeError(): { start: string; end: string } | null {
+    const control = this.form.get('expenseDate');
+    if (!control || !control.hasError('dateOutOfRange')) {
+      return null;
+    }
+    const error = control.getError('dateOutOfRange');
+    return {
+      start: error?.start || '',
+      end: error?.end || ''
+    };
+  }
+
+  addCategory() {
+    const categoryName = this.newCategory().trim();
+    if (!categoryName) {
+      alert('請輸入類別名稱');
+      return;
+    }
+
+    // 檢查是否已存在
+    if (this.categories.includes(categoryName)) {
+      alert(`「${categoryName}」已存在`);
+      return;
+    }
+
+    // 計算新的 order（最後一個 order + 1）
+    const newOrder = this.categories.length;
+
+    // 添加到資料庫（轉換 Promise 為 Observable）
+    from(this.categoryService.addCategory({ name: categoryName, order: newOrder })).subscribe({
+      next: () => {
+        // 更新本地陣列
+        this.categories = [...this.categories, categoryName];
+        // 設定表單值
+        this.form.patchValue({ category: categoryName });
+        // 清空輸入並關閉
+        this.newCategory.set('');
+        this.showAddCategoryInput.set(false);
+      },
+      error: (err: any) => {
+        console.error('添加類別失敗:', err);
+        alert(`添加類別失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
+      }
+    });
+  }
+
+  addPaymentMethod() {
+    const methodName = this.newPaymentMethod().trim();
+    if (!methodName) {
+      alert('請輸入支付方式');
+      return;
+    }
+
+    // 檢查是否已存在
+    if (this.paymentMethods.includes(methodName)) {
+      alert(`「${methodName}」已存在`);
+      return;
+    }
+
+    // 計算新的 order（最後一個 order + 1）
+    const newOrder = this.paymentMethods.length;
+
+    // 添加到資料庫（轉換 Promise 為 Observable）
+    from(this.paymentMethodService.addPaymentMethod({ name: methodName, order: newOrder })).subscribe({
+      next: () => {
+        // 更新本地陣列
+        this.paymentMethods = [...this.paymentMethods, methodName];
+        // 設定表單值
+        this.form.patchValue({ paymentMethod: methodName });
+        // 清空輸入並關閉
+        this.newPaymentMethod.set('');
+        this.showAddPaymentMethodInput.set(false);
+      },
+      error: (err: any) => {
+        console.error('添加支付方式失敗:', err);
+        alert(`添加支付方式失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
+      }
+    });
   }
 
   cancel() {

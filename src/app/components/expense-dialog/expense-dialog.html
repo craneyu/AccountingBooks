@@ -21,7 +21,16 @@
       <!-- Date -->
       <div>
         <label class="block text-sm font-medium text-text-light mb-1">日期</label>
-        <input type="date" formControlName="expenseDate" class="soft-input">
+        <input type="date" formControlName="expenseDate" class="soft-input" [class.border-danger]="isDateInvalid()">
+
+        <!-- Date Validation Errors -->
+        <div class="mt-2 text-sm text-danger font-medium" *ngIf="isDateInvalid()">
+          @if (form.get('expenseDate')?.hasError('required')) {
+            <p>日期為必填欄位</p>
+          } @else if (form.get('expenseDate')?.hasError('dateOutOfRange')) {
+            <p>支出日期必須在 {{ dateRangeError()?.start }} 至 {{ dateRangeError()?.end }} 之間</p>
+          }
+        </div>
       </div>
 
       <!-- Amount & Currency -->
@@ -60,14 +69,55 @@
 
       <!-- Category & Method -->
       <div class="grid grid-cols-2 gap-4">
+        <!-- Category -->
         <div>
-          <label class="block text-sm font-medium text-text-light mb-1">類別</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-sm font-medium text-text-light">類別</label>
+            <button type="button" (click)="showAddCategoryInput.set(!showAddCategoryInput())" class="text-xs text-primary hover:text-primary/80 transition-colors">
+              + 新增
+            </button>
+          </div>
+
+          @if (showAddCategoryInput()) {
+            <div class="flex gap-2 mb-2">
+              <input type="text"
+                [ngModel]="newCategory()"
+                (ngModelChange)="newCategory.set($event)"
+                placeholder="輸入新類別"
+                class="flex-1 soft-input text-sm py-1" />
+              <button type="button" (click)="addCategory()" class="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-primary/80 transition-colors">
+                確定
+              </button>
+            </div>
+          }
+
           <select formControlName="category" class="soft-select">
             <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
           </select>
         </div>
+
+        <!-- Payment Method -->
         <div>
-          <label class="block text-sm font-medium text-text-light mb-1">支付方式</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-sm font-medium text-text-light">支付方式</label>
+            <button type="button" (click)="showAddPaymentMethodInput.set(!showAddPaymentMethodInput())" class="text-xs text-primary hover:text-primary/80 transition-colors">
+              + 新增
+            </button>
+          </div>
+
+          @if (showAddPaymentMethodInput()) {
+            <div class="flex gap-2 mb-2">
+              <input type="text"
+                [ngModel]="newPaymentMethod()"
+                (ngModelChange)="newPaymentMethod.set($event)"
+                placeholder="輸入新支付方式"
+                class="flex-1 soft-input text-sm py-1" />
+              <button type="button" (click)="addPaymentMethod()" class="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-primary/80 transition-colors">
+                確定
+              </button>
+            </div>
+          }
+
           <select formControlName="paymentMethod" class="soft-select">
             <option *ngFor="let p of paymentMethods" [value]="p">{{ p }}</option>
           </select>
