@@ -41,6 +41,14 @@
           <span>{{ user.displayName }}</span>
         </div>
 
+        <!-- 帳號設定按鈕 -->
+        <button (click)="openAccountSettings()"
+                class="soft-btn-icon text-text-light hover:text-primary transition-colors"
+                title="帳號設定"
+                *ngIf="currentUser()">
+          <fa-icon [icon]="faCog"></fa-icon>
+        </button>
+
         <button (click)="logout()" class="soft-btn-icon text-text-light hover:text-danger" title="登出">
           <fa-icon [icon]="faSignOutAlt"></fa-icon>
         </button>
@@ -66,4 +74,10 @@
     (notificationDeleted)="onNotificationDeleted($event)"
     (close)="closeNotificationPanel()">
   </app-notification-panel>
+
+  <!-- Account Settings Dialog -->
+  <app-account-settings-dialog
+    *ngIf="showAccountSettings()"
+    (close)="closeAccountSettings()">
+  </app-account-settings-dialog>
 </div>

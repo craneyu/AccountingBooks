@@ -5,14 +5,15 @@ import { AuthService } from '../../core/services/auth.service';
 import { SystemSettingsService } from '../../core/services/system-settings.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faSignOutAlt, faUser, faSuitcaseRolling, faSpinner, faBell } from '@fortawesome/free-solid-svg-icons';
+import { faSignOutAlt, faUser, faSuitcaseRolling, faSpinner, faBell, faCog } from '@fortawesome/free-solid-svg-icons';
 import { NotificationPanelComponent } from '../../components/notification-panel/notification-panel.component';
+import { AccountSettingsDialogComponent } from '../../components/account-settings-dialog/account-settings-dialog.component';
 import { Notification } from '../../core/models/notification.model';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, FontAwesomeModule, NotificationPanelComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, FontAwesomeModule, NotificationPanelComponent, AccountSettingsDialogComponent],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss'
 })
@@ -35,6 +36,10 @@ export class MainLayoutComponent implements OnInit {
   faSuitcaseRolling = faSuitcaseRolling;
   faSpinner = faSpinner;
   faBell = faBell;
+  faCog = faCog;
+
+  // 帳號設定對話框狀態
+  showAccountSettings = signal(false);
 
   ngOnInit() {
     // 訂閱通知（如果使用者已登入）
@@ -87,5 +92,19 @@ export class MainLayoutComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  /**
+   * 打開帳號設定對話框
+   */
+  openAccountSettings() {
+    this.showAccountSettings.set(true);
+  }
+
+  /**
+   * 關閉帳號設定對話框
+   */
+  closeAccountSettings() {
+    this.showAccountSettings.set(false);
   }
 }

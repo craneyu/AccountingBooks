@@ -307,6 +307,100 @@ function generateNotificationMessage(type: string, data: Record<string, any>): s
   }
 }
 
+// ==================== 帳號管理觸發器 ====================
+
+/**
+ * 每日執行：清理已刪除申請超過 7 天的帳號
+ * 執行時間：每天凌晨 0 點 UTC
+ */
+export const cleanupDeletedAccounts = functions.pubsub
+  .schedule('0 0 * * *')
+  .timeZone('UTC')
+  .onRun(async (context) => {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      // 查詢所有 deleteRequestedAt 在 7 天前以上的使用者
+      const usersSnapshot = await db.collection('users')
+        .where('deleteRequestedAt', '<=', Timestamp.fromDate(sevenDaysAgo))
+        .where('status', '==', 'inactive')
+        .get();
+
+      console.log(`找到 ${usersSnapshot.docs.length} 個待刪除帳號`);
+
+      let deletedCount = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userId = userDoc.id;
+        const userData = userDoc.data();
+
+        try {
+          // 1. 標記該使用者的所有支出為已刪除
+          await markUserExpensesAsDeleted(userId);
+
+          // 2. 標記使用者為已刪除
+          await db.collection('users').doc(userId).update({
+            deletedAt: Timestamp.now(),
+            displayName: '已註銷使用者'
+          });
+
+          // 3. 從 Firebase Auth 中刪除使用者（可選，取決於是否需要保留帳戶記錄）
+          // 注意：這需要 admin SDK 的 auth() 方法
+          // 為了保持審計日誌，我們暫時不刪除 Auth 帳戶
+
+          console.log(`✓ 已刪除帳號: ${userId}`);
+          deletedCount++;
+        } catch (error) {
+          console.error(`✗ 刪除帳號 ${userId} 失敗:`, error);
+        }
+      }
+
+      console.log(`清理完成：共刪除 ${deletedCount} 個帳號`);
+      return { processed: usersSnapshot.docs.length, deleted: deletedCount };
+    } catch (error) {
+      console.error('帳號清理失敗:', error);
+      throw error;
+    }
+  });
+
+/**
+ * 標記使用者的所有支出為已刪除
+ */
+async function markUserExpensesAsDeleted(userId: string): Promise<void> {
+  try {
+    // 查詢所有包含該使用者支出的旅程
+    const tripsSnapshot = await db.collection('trips').get();
+
+    for (const tripDoc of tripsSnapshot.docs) {
+      const tripId = tripDoc.id;
+
+      // 查詢該旅程中該使用者的所有支出
+      const expensesSnapshot = await db
+        .collection(`trips/${tripId}/expenses`)
+        .where('submittedBy', '==', userId)
+        .get();
+
+      // 批量更新為已刪除使用者
+      if (expensesSnapshot.docs.length > 0) {
+        const batch = db.batch();
+
+        expensesSnapshot.docs.forEach((expenseDoc) => {
+          batch.update(expenseDoc.ref, {
+            isDeletedUser: true,
+            submittedByName: '已註銷使用者'
+          });
+        });
+
+        await batch.commit();
+        console.log(`  - 標記 ${expensesSnapshot.docs.length} 筆支出為已刪除使用者（旅程: ${tripId}）`);
+      }
+    }
+  } catch (error) {
+    console.error('標記使用者支出失敗:', error);
+    throw error;
+  }
+}
+
 /**
  * 健康檢查函數
  */
