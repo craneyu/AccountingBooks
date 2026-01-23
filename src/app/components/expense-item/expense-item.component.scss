@@ -39,11 +39,8 @@
 
     // 平板版（寬度 600px - 1024px）：直接顯示按鈕
     @media (min-width: 600px) and (max-width: 1024px) {
-      position: relative;
-      background-color: transparent;
-      width: auto;
-      height: auto;
-      padding: 0 8px 0 0;
+      // 保持絕對定位，使其不佔用布局空間
+      position: absolute;
     }
 
     // 寬屏桌面版（寬度 >= 1025px）：隱藏選單
@@ -94,31 +91,22 @@
   .expense-content {
     position: relative;
     z-index: 2;
-    display: flex;
-    align-items: stretch;
+    transition: transform 0.2s ease-out;
     background-color: inherit;
     pointer-events: auto;
 
     // 手機版（寬度 < 600px）：允許滑動
     @media (max-width: 599px) {
-      transition: transform 0.2s ease-out;
       touch-action: manipulation;
     }
 
-    // 平板版（寬度 600px - 1024px）：不需要滑動
-    @media (min-width: 600px) and (max-width: 1024px) {
-      flex: 1;
-      touch-action: auto;
-    }
-
-    // 寬屏桌面版（寬度 >= 1025px）：不需要滑動
-    @media (min-width: 1025px) {
-      flex: 1;
+    // 平板版和桌面版：不需要滑動
+    @media (min-width: 600px) {
       touch-action: auto;
     }
   }
 
-  // 手機版和平板版提示文字
+  // 手機版提示文字（只在手機版 < 600px 顯示）
   .mobile-hint {
     display: none;  // 預設隱藏
 
@@ -132,8 +120,8 @@
     opacity: 0;
     animation: fadeOut 0.5s ease-in 1.5s forwards;
 
-    @media (max-width: 1024px) {
-      display: block;  // 手機版和平板版才顯示
+    @media (max-width: 599px) {
+      display: block;  // 只有手機版才顯示
     }
   }
 }
@@ -162,8 +150,8 @@
 }
 
 // iPad 優化（44x44pt 觸控區域）
-// 在平板上使用左滑選單，所以需要更大的觸控區域
-@media (max-width: 1024px) and (hover: none) {
+// 在平板上直接顯示按鈕，需要更大的觸控區域
+@media (min-width: 600px) and (max-width: 1024px) and (hover: none) {
   .expense-item-wrapper {
     .action-btn {
       min-height: 44px;
