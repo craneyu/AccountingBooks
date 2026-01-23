@@ -20,27 +20,47 @@
     -webkit-touch-callout: default;
   }
 
+  // 手機版滑動包裝容器：包含 action-menu 和 expense-content
+  .slide-wrapper {
+    transition: transform 0.2s ease-out;
+    position: relative;
+
+    // 手機版：flex 布局，包含 action-menu 和 expense-content
+    @media (max-width: 599px) {
+      display: flex;
+      width: calc(100% + 140px);
+    }
+
+    // 平板版：回到正常布局，action-menu 絕對定位
+    @media (min-width: 600px) {
+      display: block;
+      width: 100%;
+    }
+  }
+
   // 背景選單
   .action-menu {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
+    min-width: 140px;
     width: 140px;
+    height: 100%;
     display: flex;
     gap: 0;
     z-index: 10;
     flex-shrink: 0;
+    position: relative;
 
-    // 手機版（寬度 < 600px）：隱藏在右側，等待左滑露出
+    // 手機版（寬度 < 600px）：通過 flex 在 slide-wrapper 內排列
     @media (max-width: 599px) {
-      right: -140px; // 將按鈕推出視圖，overflow: hidden 會隱藏
+      // flex 會自動排列
     }
 
-    // 平板版（寬度 600px - 1024px）：直接顯示按鈕
+    // 平板版（寬度 600px - 1024px）：直接顯示按鈕（絕對定位）
     @media (min-width: 600px) and (max-width: 1024px) {
-      // 保持絕對定位，使其不佔用布局空間
       position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 140px;
     }
 
     // 寬屏桌面版（寬度 >= 1025px）：隱藏選單
@@ -91,9 +111,11 @@
   .expense-content {
     position: relative;
     z-index: 2;
-    transition: transform 0.2s ease-out;
     background-color: inherit;
     pointer-events: auto;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
 
     // 手機版（寬度 < 600px）：允許滑動
     @media (max-width: 599px) {
