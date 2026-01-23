@@ -14,6 +14,7 @@ import { Notification } from '../../core/models/notification.model';
   selector: 'app-main-layout',
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, FontAwesomeModule, NotificationPanelComponent, AccountSettingsDialogComponent],
+  providers: [],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss'
 })

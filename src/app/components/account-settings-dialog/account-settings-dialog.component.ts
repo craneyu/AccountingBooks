@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal, Injector } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
@@ -17,7 +17,7 @@ export class AccountSettingsDialogComponent {
   @Output() close = new EventEmitter<void>();
 
   private authService = inject(AuthService);
-  private userService = inject(UserService);
+  private injector = inject(Injector);
 
   // Icons
   faTimes = faTimes;
@@ -35,7 +35,16 @@ export class AccountSettingsDialogComponent {
   getRemainingDays(): number {
     const user = this.currentUser();
     if (!user?.deleteRequestedAt) return 0;
-    return this.userService.getRemainingDays(user.deleteRequestedAt);
+
+    try {
+      const userService = this.injector.get(UserService, null);
+      if (userService) {
+        return userService.getRemainingDays(user.deleteRequestedAt);
+      }
+    } catch (error) {
+      console.warn('[AccountSettingsDialog] Error getting remaining days:', error);
+    }
+    return 0;
   }
 
   /**
