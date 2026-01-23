@@ -25,9 +25,10 @@
     transition: transform 0.2s ease-out;
     position: relative;
 
-    // 手機版：flex 布局，包含 action-menu 和 expense-content
+    // 手機版：flex 布局，action-menu 排列在右側（通過 row-reverse）
     @media (max-width: 599px) {
       display: flex;
+      flex-direction: row-reverse; // 反轉順序：content 在左，action-menu 在右
       width: calc(100% + 140px);
     }
 
