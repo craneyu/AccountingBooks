@@ -62,8 +62,8 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   // 快速添加類別和支付方式
   showAddCategoryInput = signal(false);
   showAddPaymentMethodInput = signal(false);
-  newCategory = signal('');
-  newPaymentMethod = signal('');
+  newCategoryText: string = '';
+  newPaymentMethodText: string = '';
 
   ngOnChanges(changes: SimpleChanges) {
     // 當 expense 改變時，更新表單中的日期
@@ -418,7 +418,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   }
 
   addCategory() {
-    const categoryName = this.newCategory().trim();
+    const categoryName = this.newCategoryText.trim();
     if (!categoryName) {
       alert('請輸入類別名稱');
       return;
@@ -441,7 +441,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
         // 設定表單值
         this.form.patchValue({ category: categoryName });
         // 清空輸入並關閉
-        this.newCategory.set('');
+        this.newCategoryText = '';
         this.showAddCategoryInput.set(false);
       },
       error: (err: any) => {
@@ -452,7 +452,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   }
 
   addPaymentMethod() {
-    const methodName = this.newPaymentMethod().trim();
+    const methodName = this.newPaymentMethodText.trim();
     if (!methodName) {
       alert('請輸入支付方式');
       return;
@@ -475,7 +475,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
         // 設定表單值
         this.form.patchValue({ paymentMethod: methodName });
         // 清空輸入並關閉
-        this.newPaymentMethod.set('');
+        this.newPaymentMethodText = '';
         this.showAddPaymentMethodInput.set(false);
       },
       error: (err: any) => {

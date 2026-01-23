@@ -81,8 +81,7 @@
           @if (showAddCategoryInput()) {
             <div class="flex gap-2 mb-2">
               <input type="text"
-                [ngModel]="newCategory()"
-                (ngModelChange)="newCategory.set($event)"
+                [(ngModel)]="newCategoryText"
                 placeholder="輸入新類別"
                 class="flex-1 soft-input text-sm py-1" />
               <button type="button" (click)="addCategory()" class="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-primary/80 transition-colors">
@@ -108,8 +107,7 @@
           @if (showAddPaymentMethodInput()) {
             <div class="flex gap-2 mb-2">
               <input type="text"
-                [ngModel]="newPaymentMethod()"
-                (ngModelChange)="newPaymentMethod.set($event)"
+                [(ngModel)]="newPaymentMethodText"
                 placeholder="輸入新支付方式"
                 class="flex-1 soft-input text-sm py-1" />
               <button type="button" (click)="addPaymentMethod()" class="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-primary/80 transition-colors">
