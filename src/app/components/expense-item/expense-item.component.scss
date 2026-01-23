@@ -29,6 +29,7 @@
     @media (max-width: 599px) {
       display: flex;
       flex-direction: row-reverse; // 反轉順序：content 在左，action-menu 在右
+      align-items: stretch; // 讓子元素等高
       width: calc(100% + 140px);
     }
 
@@ -72,6 +73,7 @@
     .action-btn {
       min-width: 0;
       flex: 1 1 auto;
+      height: 100%; // 讓按鈕填充整個高度
       border: none;
       cursor: pointer;
       display: flex;
