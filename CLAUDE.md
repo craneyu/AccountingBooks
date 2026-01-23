@@ -4,7 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AccountingBooks (PayState) is a travel expense tracking application built with Angular 19+ (Standalone Components), Firebase, and Tailwind CSS. It features a Soft UI Evolution design (neumorphism-inspired with modern accessibility adjustments) for tracking expenses across multiple trips with real-time currency conversion.
+AccountingBooks (PayState) is a travel expense tracking application built with Angular 21+ (Standalone Components), Firebase, and Tailwind CSS. It features a Soft UI Evolution design (neumorphism-inspired with modern accessibility adjustments) for tracking expenses across multiple trips with real-time currency conversion.
+
+## Key Dependencies
+
+### Core Framework & Runtime
+- **Angular 21.1** - Standalone components architecture with Signals
+- **TypeScript 5.9** - Type-safe development
+- **RxJS 7.8** - Reactive programming
+
+### Firebase Services
+- **Firebase 11.10** - Backend services platform
+- **@angular/fire 20.0** - Official Angular Firebase library
+
+### UI & Styling
+- **Tailwind CSS 3.4** - Utility-first CSS framework
+- **SweetAlert2 11.26** - Beautiful alert/modal dialogs
+- **Swiper 12.0** - Touch-friendly image carousel/gallery
+- **Font Awesome 7** - Icon library (@fortawesome/angular-fontawesome)
+
+### Utilities
+- **crypto-js 4.2** - Cryptographic functions
+
+### External APIs
+- **ExchangeRate-API** - Real-time currency conversion rates
 
 ## Common Commands
 
@@ -160,7 +183,40 @@ Receipt images are handled via `ImageUtils` (core/utils/image-utils.ts):
 - Upload to Firebase Storage at `receipts/{tripId}/`
 - Multiple images per expense supported via `receiptImageUrls[]` array
 
-#### 8. UI Design System (Soft UI Evolution)
+#### 8. Image Gallery with Swiper.js
+
+The application uses **Swiper 12** for a touch-friendly image viewing experience:
+
+**Key Features**:
+- iOS-native swipe gestures for smooth navigation
+- Left/right navigation buttons for desktop
+- Pagination indicators
+- Keyboard controls (arrow keys, ESC to close)
+- Responsive design (mobile/tablet/desktop)
+- Zoom functionality support
+
+**Implementation Location**: `src/app/pages/expenses/expenses.component.ts`
+
+**Usage Pattern**:
+```typescript
+import { register } from 'swiper/element/bundle';
+register(); // Register Swiper custom elements
+
+// In template:
+<swiper-container navigation="true" pagination="true">
+  <swiper-slide *ngFor="let url of receiptUrls">
+    <img [src]="url" />
+  </swiper-slide>
+</swiper-container>
+```
+
+**Integration Notes**:
+- Swiper is used as custom elements (Web Components)
+- No additional Angular wrapper needed
+- Fullscreen modal for receipt viewing
+- Touch-optimized for mobile expense tracking workflows
+
+#### 9. UI Design System (Soft UI Evolution)
 
 Tailwind CSS configuration with custom neumorphism theme:
 - Colors: `primary` (#4fd1c5), `background` (#e0e5ec)
@@ -171,6 +227,7 @@ Common patterns:
 - Dialogs use SweetAlert2 for confirmations
 - Forms use Angular reactive forms with validation
 - Icons from Font Awesome via `@fortawesome/angular-fontawesome`
+- Image galleries use Swiper.js for touch-friendly viewing
 
 ## Important File Locations
 
@@ -229,6 +286,8 @@ All routes except `/login` are protected by `authGuard`.
 3. **Image upload size** - Storage rules enforce 5MB limit for receipts, 2MB for trip covers
 4. **Timestamp handling** - Always use `Timestamp.now()` from Firebase, not JavaScript Date
 5. **Subcollection queries** - Expenses are in subcollections, so queries must include tripId path
+6. **Swiper.js initialization** - Must call `register()` from `swiper/element/bundle` to register custom elements before using `<swiper-container>` in templates
+7. **Swiper custom elements** - Use `<swiper-container>` and `<swiper-slide>` tags (Web Components), not Angular component wrappers
 
 ## Additional Resources
 
