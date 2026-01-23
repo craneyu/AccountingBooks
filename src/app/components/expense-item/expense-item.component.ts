@@ -47,9 +47,9 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   slideOffset = signal(0);
   private hammer: any;
 
-  // 計算實際的 transform 偏移（手機版允許滑動，平板版始終為 0）
+  // 計算實際的 transform 偏移（手機版不使用滑動了，始終為 0）
   actualSlideOffset = computed(() => {
-    return window.innerWidth < 600 ? this.slideOffset() : 0;
+    return 0;
   });
 
   categoryIconMap = signal<Record<string, string>>({});
@@ -84,33 +84,21 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private resizeListener = () => {
-    // 如果切換到桌面版或平板版（寬度 >= 600px），銷毀 Hammer
-    if (window.innerWidth >= 600 && this.hammer) {
+    // 手機版不再使用滑動，銷毀所有 Hammer 實例
+    if (this.hammer) {
       this.hammer.destroy();
       this.hammer = undefined;
       this.isSliding.set(false);
       this.slideOffset.set(0);
     }
-    // 如果切換回手機版（寬度 < 600px），重新初始化
-    else if (window.innerWidth < 600 && !this.hammer) {
-      this.initializeHammer();
-    }
   };
 
   ngAfterViewInit() {
-    // 只在手機版（寬度 < 600px）使用 HammerJS
-    // 平板版（600px - 1024px）和桌面版（>= 1025px）直接顯示按鈕
+    // 手機版不再使用滑動，按鈕直接顯示
+    // 平板版（600px - 1024px）直接顯示按鈕
+    // 桌面版（>= 1025px）hover 時顯示按鈕
     const windowWidth = window.innerWidth;
-    const needsHammer = windowWidth < 600;
-    console.log('[ExpenseItem] Window width:', windowWidth, 'Needs HammerJS:', needsHammer);
-
-    if (needsHammer) {
-      // 延遲初始化以確保 DOM 完全載入
-      setTimeout(() => {
-        this.initializeHammer();
-        this.initializeTouchEvents();
-      }, 100);
-    }
+    console.log('[ExpenseItem] Window width:', windowWidth);
 
     // 監聽視窗大小變化
     window.addEventListener('resize', this.resizeListener);
