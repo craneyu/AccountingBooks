@@ -16,7 +16,7 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faTimes, faSpinner, faSync, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { compressImage } from '../../core/utils/image-utils';
+import { compressImage, validateImageFile, validateMultipleImages } from '../../core/utils/image-utils';
 
 @Component({
   selector: 'app-expense-dialog',
@@ -212,16 +212,43 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
 
   onFilesSelected(event: any) {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      Array.from(files).forEach((file: any) => {
-        this.newFiles.push(file);
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.previewUrls.push({ url: e.target.result, isNew: true, file: file });
-        };
-        reader.readAsDataURL(file);
-      });
+    if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files) as File[];
+
+    // 檢查與現有檔案的總數限制（最多 10 張）
+    const totalCount = this.newFiles.length + selectedFiles.length;
+    if (totalCount > 10) {
+      alert(`最多只能上傳 10 張圖片，目前已有 ${this.newFiles.length} 張，無法新增 ${selectedFiles.length} 張。`);
+      return;
     }
+
+    // 驗證每個選定的檔案
+    const validFiles: File[] = [];
+    for (const file of selectedFiles) {
+      const validation = validateImageFile(file, 10);
+      if (!validation.valid) {
+        alert(`檔案 "${file.name}" 驗證失敗：${validation.error}`);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    // 新增有效的檔案
+    validFiles.forEach((file: File) => {
+      this.newFiles.push(file);
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewUrls.push({ url: e.target.result, isNew: true, file: file });
+      };
+      reader.onerror = () => {
+        alert(`無法讀取檔案 "${file.name}"`);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 重置 input
+    event.target.value = '';
   }
 
   removeImage(index: number) {
@@ -234,21 +261,32 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
     this.previewUrls.splice(index, 1);
   }
 
-  async uploadSingleFile(file: File): Promise<string | null> {
+  async uploadSingleFile(file: File): Promise<{ url: string | null; error?: string }> {
     try {
-        // Compress image before upload
-        const compressedBlob = await compressImage(file, 1024, 1024, 0.8);
-        
-        // Use .jpg extension
-        const fileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-        const path = `receipts/${this.tripId}/${new Date().getTime()}_${Math.random().toString(36).substring(7)}_${fileName}.jpg`;
-        
-        const storageRef = ref(this.storage, path);
-        const result = await uploadBytes(storageRef, compressedBlob);
-        return await getDownloadURL(result.ref);
+      // 驗證檔案
+      const validation = validateImageFile(file, 10);
+      if (!validation.valid) {
+        return { url: null, error: validation.error };
+      }
+
+      // 壓縮圖片（同時處理 HEIC 轉換）
+      const compressedBlob = await compressImage(file, 1024, 1024, 0.8);
+
+      // 使用 .jpg 副檔名
+      const fileName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      const path = `receipts/${this.tripId}/${new Date().getTime()}_${Math.random().toString(36).substring(7)}_${fileName}.jpg`;
+
+      const storageRef = ref(this.storage, path);
+      const result = await uploadBytes(storageRef, compressedBlob);
+      const url = await getDownloadURL(result.ref);
+      return { url };
     } catch (error) {
-        console.error('Upload failed', error);
-        return null;
+      const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+      console.error('圖片上傳失敗:', error);
+      return {
+        url: null,
+        error: `上傳失敗：${errorMessage}`
+      };
     }
   }
 
@@ -259,24 +297,43 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
     try {
       const formVal = this.form.value;
       const user = this.authService.currentUser();
-      
-      // Upload new images
+
+      // 驗證新上傳的圖片
+      if (this.newFiles.length > 0) {
+        const validation = validateMultipleImages(this.newFiles, 10, 10);
+        if (!validation.valid) {
+          alert(`圖片驗證失敗：\n${validation.errors.join('\n')}`);
+          return;
+        }
+      }
+
+      // 上傳圖片
       this.uploading = true;
       const uploadedUrls: string[] = [];
-      
-      // 1. Keep existing URLs that weren't removed
+      const uploadErrors: string[] = [];
+
+      // 1. 保留未移除的現有 URL
       const existingUrls = this.previewUrls.filter(p => !p.isNew).map(p => p.url);
       uploadedUrls.push(...existingUrls);
 
-      // 2. Upload new files
+      // 2. 上傳新檔案
       const uploadPromises = this.newFiles.map(file => this.uploadSingleFile(file));
-      const newUrls = await Promise.all(uploadPromises);
-      
-      // Filter out failed uploads
-      newUrls.forEach(url => {
-        if (url) uploadedUrls.push(url);
+      const uploadResults = await Promise.all(uploadPromises);
+
+      // 收集上傳的 URL 和錯誤
+      uploadResults.forEach((result: any) => {
+        if (result.url) {
+          uploadedUrls.push(result.url);
+        } else if (result.error) {
+          uploadErrors.push(result.error);
+        }
       });
-      
+
+      // 如果有上傳錯誤，提示使用者
+      if (uploadErrors.length > 0) {
+        alert(`部分圖片上傳失敗：\n${uploadErrors.join('\n')}\n\n已成功上傳 ${uploadedUrls.length} 張圖片`);
+      }
+
       this.uploading = false;
 
       const expenseData: any = {
@@ -286,14 +343,14 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
         amount: Number(formVal.amount),
         currency: formVal.currency,
         exchangeRate: Number(formVal.exchangeRate),
-        exchangeRateTime: Timestamp.now(), 
+        exchangeRateTime: Timestamp.now(),
         amountInTWD: Number(formVal.amountInTWD),
         category: formVal.category,
         paymentMethod: formVal.paymentMethod,
         note: formVal.note,
         receiptImageUrls: uploadedUrls,
         receiptImageUrl: uploadedUrls.length > 0 ? uploadedUrls[0] : null, // Backward compat
-        updatedAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
       };
 
       if (this.expense) {
@@ -308,13 +365,14 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
         expenseData.submittedBy = user?.id;
         expenseData.submittedByName = user?.displayName || 'Unknown';
         expenseData.submittedByEmail = user?.email || 'Unknown';
-        
+
         await this.expenseService.addExpense(this.tripId, expenseData);
       }
       this.close.emit();
     } catch (err) {
-      console.error(err);
-      // Show error
+      const errorMessage = err instanceof Error ? err.message : '未知錯誤';
+      console.error('提交失敗:', err);
+      alert(`提交失敗：${errorMessage}`);
     } finally {
       this.loading = false;
       this.uploading = false;
