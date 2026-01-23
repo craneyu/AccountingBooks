@@ -30,6 +30,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
+import { ExpenseItemComponent } from '../../components/expense-item/expense-item.component';
 import { StatisticsComponent } from './statistics/statistics.component';
 import { SearchFilterComponent } from './search-filter/search-filter.component';
 import { getIcon } from '../../core/utils/icon-utils';
@@ -40,7 +41,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent, StatisticsComponent, SearchFilterComponent],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, ExpenseItemComponent, TripMembersDialogComponent, StatisticsComponent, SearchFilterComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './expenses.html',
   styleUrl: './expenses.scss',

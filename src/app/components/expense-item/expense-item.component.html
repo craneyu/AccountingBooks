@@ -1,0 +1,85 @@
+<div #itemContainer class="expense-item-wrapper">
+  <!-- 背景選單（會在左滑時露出） -->
+  <div class="action-menu">
+    <button class="action-btn view-btn" (click)="onViewReceipts()" *ngIf="expense.receiptImageUrls?.length || expense.receiptImageUrl" title="查看照片">
+      <fa-icon [icon]="faImages"></fa-icon>
+    </button>
+    <button class="action-btn edit-btn" (click)="onEdit()" *ngIf="canEdit" title="編輯">
+      <fa-icon [icon]="faEdit"></fa-icon>
+    </button>
+    <button class="action-btn delete-btn" (click)="onDelete()" *ngIf="canEdit" title="刪除">
+      <fa-icon [icon]="faTrash"></fa-icon>
+    </button>
+  </div>
+
+  <!-- 內容部分（會隨著滑動而移動） -->
+  <div class="expense-content" [style.transform]="'translateX(' + slideOffset() + 'px)'">
+    <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
+      <!-- 左側：分類圖示 + 文字資訊 -->
+      <div class="flex items-center gap-4 flex-1">
+        <!-- 分類圖示 -->
+        <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xl flex-shrink-0 relative overflow-hidden">
+          <fa-icon [icon]="getCategoryIcon(expense.category)"></fa-icon>
+          @if (isFallbackIcon(expense.category)) {
+            <span class="absolute inset-0 flex items-center justify-center font-black uppercase mt-1">
+              {{ expense.category.charAt(0) }}
+            </span>
+          }
+        </div>
+
+        <!-- 文字資訊 -->
+        <div class="min-w-0 flex-1">
+          <h3 class="font-bold text-text truncate pr-2">{{ expense.item }}</h3>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-text-light">
+            <span>{{ expense.expenseDate.toDate() | date:'yyyy/MM/dd' }}</span>
+            <span>•</span>
+            <span>{{ expense.paymentMethod }}</span>
+            @if (expense.submittedByName) {
+              <span>•</span>
+              <span>{{ expense.isDeletedUser ? '已註銷使用者' : expense.submittedByName }}</span>
+            }
+            @if (expense.note) {
+              <span class="truncate max-w-[100px]">• {{ expense.note }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：金額 + 桌面版操作按鈕 -->
+      <div class="text-right flex-shrink-0">
+        <div class="font-bold text-text">
+          {{ expense.amountInTWD | number }} TWD
+        </div>
+        @if (expense.currency !== 'TWD') {
+          <div class="text-xs text-text-light">
+            {{ expense.amount | number }} {{ expense.currency }}
+          </div>
+        }
+
+        <!-- 桌面版操作按鈕（md 以上顯示） -->
+        <div class="hidden md:flex items-center justify-end gap-3 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          @if (expense.receiptImageUrls?.length || expense.receiptImageUrl) {
+            <button (click)="onViewReceipts()" class="text-text-light hover:text-primary transition-colors" [title]="'查看照片 (' + ((expense.receiptImageUrls?.length) || 1) + ')'">
+              <fa-icon [icon]="faImages"></fa-icon>
+            </button>
+          }
+          @if (canEdit) {
+            <button (click)="onEdit()" class="text-text-light hover:text-primary transition-colors" title="編輯">
+              <fa-icon [icon]="faEdit"></fa-icon>
+            </button>
+          }
+          @if (canEdit) {
+            <button (click)="onDelete()" class="text-text-light hover:text-danger transition-colors" title="刪除">
+              <fa-icon [icon]="faTrash"></fa-icon>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手機版提示文字 -->
+  @if (isSliding()) {
+    <div class="mobile-hint">滑動操作可用</div>
+  }
+</div>
