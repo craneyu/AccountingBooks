@@ -218,6 +218,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private touchStartX = 0;
   private touchStartY = 0;
+  private isTouching = false;
 
   /**
    * 初始化原生觸摸事件（備用）
@@ -229,16 +230,25 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     const MENU_WIDTH = 140;
     const TRIGGER_THRESHOLD = MENU_WIDTH / 2;
 
+    // 在 capture 階段監聽，確保先於其他事件處理器
     element.addEventListener('touchstart', (e: TouchEvent) => {
+      console.log('[TouchStart] touches:', e.touches.length);
+      if (e.touches.length === 0) return;
+      this.isTouching = true;
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
-    }, { passive: true });
+      console.log('[TouchStart] X:', this.touchStartX, 'Y:', this.touchStartY);
+    }, true);
 
     element.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!this.isTouching || e.touches.length === 0) return;
+
       const touchX = e.touches[0].clientX;
       const touchY = e.touches[0].clientY;
       const deltaX = touchX - this.touchStartX;
       const deltaY = touchY - this.touchStartY;
+
+      console.log('[TouchMove] deltaX:', deltaX, 'deltaY:', deltaY);
 
       // 檢查是否為水平移動
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
@@ -251,10 +261,15 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
         // 根據拖動距離判斷是否應顯示選單
         this.isSliding.set(offset < -TRIGGER_THRESHOLD);
       }
-    }, { passive: false });
+    }, true);
 
-    element.addEventListener('touchend', () => {
+    element.addEventListener('touchend', (e: TouchEvent) => {
+      console.log('[TouchEnd] fired');
+      if (!this.isTouching) return;
+
+      this.isTouching = false;
       const currentOffset = this.slideOffset();
+
       if (currentOffset < -TRIGGER_THRESHOLD) {
         this.isSliding.set(true);
         this.slideOffset.set(-MENU_WIDTH);
@@ -262,9 +277,9 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isSliding.set(false);
         this.slideOffset.set(0);
       }
-    }, { passive: true });
+    }, true);
 
-    console.log('原生觸摸事件初始化成功');
+    console.log('[InitTouchEvents] 原生觸摸事件初始化成功，使用 capture 模式');
   }
 
   /**
