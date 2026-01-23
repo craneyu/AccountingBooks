@@ -1,4 +1,4 @@
-import { Component, inject, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, inject, signal, computed, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { ExpenseService } from '../../core/services/expense.service';
@@ -7,6 +7,7 @@ import { CategoryService } from '../../core/services/category.service';
 import { TripMembersService } from '../../core/services/trip-members.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ExportService } from '../../core/services/export.service';
+import { SearchFilterService, FilterCriteria } from '../../core/services/search-filter.service';
 import { Expense } from '../../core/models/expense.model';
 import { Trip } from '../../core/models/trip.model';
 import { TripMember } from '../../core/models/trip-member.model';
@@ -25,10 +26,12 @@ import {
   faDownload,
   faFileExcel,
   faFileZipper,
+  faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
 import { StatisticsComponent } from './statistics/statistics.component';
+import { SearchFilterComponent } from './search-filter/search-filter.component';
 import { getIcon } from '../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
 import Swiper from 'swiper';
@@ -37,7 +40,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent, StatisticsComponent],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent, StatisticsComponent, SearchFilterComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './expenses.html',
   styleUrl: './expenses.scss',
@@ -51,6 +54,7 @@ export class ExpensesComponent {
   private membersService = inject(TripMembersService);
   private authService = inject(AuthService);
   private exportService = inject(ExportService);
+  private searchFilterService = inject(SearchFilterService);
 
   tripId = this.route.snapshot.paramMap.get('tripId')!;
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
@@ -64,7 +68,44 @@ export class ExpensesComponent {
   selectedExpense: Expense | null = null;
   showMembersDialog = signal(false);
   showStatistics = signal(false);
+  showSearchFilter = signal(false);
   currentExpenses = signal<Expense[]>([]);
+  filterCriteria = signal<FilterCriteria>(this.searchFilterService.resetFilters());
+
+  // 計算過濾後的支出
+  filteredExpenses = computed(() => {
+    const expenses = this.currentExpenses();
+    const criteria = this.filterCriteria();
+    return this.searchFilterService.applyFilters(expenses, criteria);
+  });
+
+  // 計算支出分類和支付方式（用於篩選選項）
+  availableCategories = computed(() => {
+    const categories = new Set<string>();
+    this.currentExpenses().forEach(e => categories.add(e.category));
+    return Array.from(categories);
+  });
+
+  availablePaymentMethods = computed(() => {
+    const methods = new Set<string>();
+    this.currentExpenses().forEach(e => methods.add(e.paymentMethod));
+    return Array.from(methods);
+  });
+
+  availableMembers = computed(() => {
+    const members = new Map<string, string>();
+    this.currentExpenses().forEach(e => {
+      if (!members.has(e.submittedBy)) {
+        members.set(e.submittedBy, e.submittedByName);
+      }
+    });
+    return Array.from(members.entries()).map(([id, name]) => ({ id, name }));
+  });
+
+  // 搜尋統計
+  filterStats = computed(() => {
+    return this.searchFilterService.getFilterStats(this.currentExpenses(), this.filteredExpenses());
+  });
 
   faPlus = faPlus;
   faArrowLeft = faArrowLeft;
@@ -77,8 +118,12 @@ export class ExpensesComponent {
   faDownload = faDownload;
   faFileExcel = faFileExcel;
   faFileZipper = faFileZipper;
+  faSearch = faSearch;
 
   exporting = signal(false);
+
+  // 支援的幣別清單
+  currencies = ['TWD', 'USD', 'JPY', 'EUR', 'KRW', 'CNY', 'THB', 'GBP'];
 
   constructor() {
     // 加載分類圖標
@@ -508,5 +553,27 @@ export class ExpensesComponent {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  openSearchFilter() {
+    this.showSearchFilter.set(true);
+  }
+
+  closeSearchFilter() {
+    this.showSearchFilter.set(false);
+  }
+
+  applyFilter(criteria: FilterCriteria) {
+    this.filterCriteria.set(criteria);
+    this.closeSearchFilter();
+  }
+
+  resetFilter() {
+    this.filterCriteria.set(this.searchFilterService.resetFilters());
+    this.closeSearchFilter();
+  }
+
+  hasActiveFilters(): boolean {
+    return this.searchFilterService.hasActiveFilters(this.filterCriteria());
   }
 }

@@ -1,0 +1,193 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 animate-fade-in-up">
+  <div class="bg-white w-full md:w-96 h-[90vh] md:h-screen rounded-t-2xl md:rounded-none flex flex-col shadow-xl">
+    <!-- 頭部 -->
+    <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between rounded-t-2xl md:rounded-none">
+      <div class="flex items-center gap-3">
+        <fa-icon [icon]="faFilter" class="text-primary text-lg"></fa-icon>
+        <h2 class="text-lg font-bold text-gray-800">篩選支出</h2>
+      </div>
+      <button (click)="closePanel()" class="text-gray-500 hover:text-gray-700 transition-colors">
+        <fa-icon [icon]="faTimes" class="text-xl"></fa-icon>
+      </button>
+    </div>
+
+    <!-- 篩選內容 -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- 關鍵字搜尋 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('keyword')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>關鍵字搜尋</span>
+          <span class="text-sm text-gray-500">{{ criteria.keyword ? '✓' : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['keyword']" class="p-4 border-t border-gray-200">
+          <div class="flex gap-2">
+            <input
+              [(ngModel)]="criteria.keyword"
+              type="text"
+              placeholder="搜尋項目、分類、備註..."
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+            <button (click)="clearKeyword()"
+                    *ngIf="criteria.keyword"
+                    class="px-3 py-2 bg-gray-200 hover:bg-gray-300 transition-colors rounded-lg text-gray-700">
+              清除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 日期範圍 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('dateRange')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>日期範圍</span>
+          <span class="text-sm text-gray-500">{{ criteria.startDate || criteria.endDate ? '✓' : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['dateRange']" class="p-4 border-t border-gray-200 space-y-3">
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">開始日期</label>
+            <input
+              [(ngModel)]="criteria.startDate"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">結束日期</label>
+            <input
+              [(ngModel)]="criteria.endDate"
+              type="date"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
+          <button (click)="clearDateRange()"
+                  *ngIf="criteria.startDate || criteria.endDate"
+                  class="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 transition-colors rounded-lg text-gray-700 text-sm">
+            清除日期
+          </button>
+        </div>
+      </div>
+
+      <!-- 分類 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('categories')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>分類</span>
+          <span class="text-sm text-gray-500">{{ selectedCategories.length > 0 ? '✓ ' + selectedCategories.length : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['categories']" class="p-4 border-t border-gray-200 space-y-2">
+          <label *ngFor="let category of categories" class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox"
+                   [checked]="selectedCategories.includes(category)"
+                   (change)="toggleCategory(category)"
+                   class="rounded border-gray-300 text-primary focus:ring-primary" />
+            <span class="text-sm text-gray-700">{{ category }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 支付方式 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('paymentMethods')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>支付方式</span>
+          <span class="text-sm text-gray-500">{{ selectedPaymentMethods.length > 0 ? '✓ ' + selectedPaymentMethods.length : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['paymentMethods']" class="p-4 border-t border-gray-200 space-y-2">
+          <label *ngFor="let method of paymentMethods" class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox"
+                   [checked]="selectedPaymentMethods.includes(method)"
+                   (change)="togglePaymentMethod(method)"
+                   class="rounded border-gray-300 text-primary focus:ring-primary" />
+            <span class="text-sm text-gray-700">{{ method }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 成員 -->
+      <div *ngIf="members.length > 0" class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('members')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>成員</span>
+          <span class="text-sm text-gray-500">{{ selectedMembers.length > 0 ? '✓ ' + selectedMembers.length : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['members']" class="p-4 border-t border-gray-200 space-y-2">
+          <label *ngFor="let member of members" class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox"
+                   [checked]="selectedMembers.includes(member.id)"
+                   (change)="toggleMember(member.id)"
+                   class="rounded border-gray-300 text-primary focus:ring-primary" />
+            <span class="text-sm text-gray-700">{{ member.name }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 金額範圍 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('amount')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>金額範圍</span>
+          <span class="text-sm text-gray-500">{{ criteria.minAmount !== undefined || criteria.maxAmount !== undefined ? '✓' : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['amount']" class="p-4 border-t border-gray-200 space-y-3">
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">最小金額 (TWD)</label>
+            <input
+              [(ngModel)]="criteria.minAmount"
+              type="number"
+              placeholder="0"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
+          <div>
+            <label class="text-sm font-medium text-gray-700 mb-1 block">最大金額 (TWD)</label>
+            <input
+              [(ngModel)]="criteria.maxAmount"
+              type="number"
+              placeholder="無限制"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
+          <button (click)="clearAmount()"
+                  *ngIf="criteria.minAmount !== undefined || criteria.maxAmount !== undefined"
+                  class="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 transition-colors rounded-lg text-gray-700 text-sm">
+            清除金額
+          </button>
+        </div>
+      </div>
+
+      <!-- 幣別 -->
+      <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <button (click)="toggleSection('currencies')"
+                class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between font-medium text-gray-800">
+          <span>幣別</span>
+          <span class="text-sm text-gray-500">{{ selectedCurrencies.length > 0 ? '✓ ' + selectedCurrencies.length : '' }}</span>
+        </button>
+        <div *ngIf="expandedSections['currencies']" class="p-4 border-t border-gray-200 space-y-2">
+          <label *ngFor="let currency of currencies" class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox"
+                   [checked]="selectedCurrencies.includes(currency)"
+                   (change)="toggleCurrency(currency)"
+                   class="rounded border-gray-300 text-primary focus:ring-primary" />
+            <span class="text-sm text-gray-700">{{ currency }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作按鈕 -->
+    <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex gap-2">
+      <button (click)="resetFilters()"
+              *ngIf="hasActiveFilters()"
+              class="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors flex items-center justify-center gap-2 font-medium">
+        <fa-icon [icon]="faRotateLeft"></fa-icon>
+        重置
+      </button>
+      <button (click)="applyFilters()"
+              class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium">
+        應用篩選
+      </button>
+    </div>
+  </div>
+</div>
