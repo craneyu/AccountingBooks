@@ -104,6 +104,8 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
         this.initializeHammer();
         // 添加備用的原生觸摸事件監聽
         this.initializeTouchEvents();
+        // 添加全局文檔級觸摸監聽
+        this.initializeGlobalTouchEvents();
       }, 100);
     }
 
@@ -281,6 +283,75 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     }, true);
 
     console.log('[InitTouchEvents] 原生觸摸事件初始化成功，使用 capture 模式');
+  }
+
+  /**
+   * 初始化全局文檔級觸摸事件
+   */
+  private initializeGlobalTouchEvents() {
+    if (!this.itemContainer) return;
+
+    const element = this.itemContainer.nativeElement;
+    const MENU_WIDTH = 140;
+    const TRIGGER_THRESHOLD = MENU_WIDTH / 2;
+
+    // 使用 document 層級的事件監聽
+    document.addEventListener('touchstart', (e: TouchEvent) => {
+      // 檢查觸摸是否發生在此元素上
+      if (!element.contains(e.target as Node)) return;
+
+      if (e.touches.length === 0) return;
+      this.isTouching = true;
+      this.touchStartX = e.touches[0].clientX;
+      this.touchStartY = e.touches[0].clientY;
+      this.touchDebugInfo.set(`📍 Start: ${Math.round(this.touchStartX)}, ${Math.round(this.touchStartY)}`);
+      console.log('[GlobalTouch] Start:', this.touchStartX, this.touchStartY);
+    }, true);
+
+    document.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!this.isTouching || e.touches.length === 0) return;
+      if (!element.contains(e.target as Node)) return;
+
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      const deltaX = touchX - this.touchStartX;
+      const deltaY = touchY - this.touchStartY;
+
+      this.touchDebugInfo.set(`👆 ΔX: ${Math.round(deltaX)} ΔY: ${Math.round(deltaY)}`);
+
+      // 檢查是否為水平移動
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
+        e.preventDefault();
+
+        // 只允許向左拖動
+        const offset = Math.min(0, Math.max(-MENU_WIDTH, deltaX));
+        this.slideOffset.set(offset);
+
+        // 根據拖動距離判斷是否應顯示選單
+        this.isSliding.set(offset < -TRIGGER_THRESHOLD);
+      }
+    }, true);
+
+    document.addEventListener('touchend', (e: TouchEvent) => {
+      if (!this.isTouching) return;
+      if (!element.contains(e.target as Node)) return;
+
+      this.isTouching = false;
+      const currentOffset = this.slideOffset();
+
+      if (currentOffset < -TRIGGER_THRESHOLD) {
+        this.isSliding.set(true);
+        this.slideOffset.set(-MENU_WIDTH);
+      } else {
+        this.isSliding.set(false);
+        this.slideOffset.set(0);
+      }
+
+      this.touchDebugInfo.set('✅ End');
+      console.log('[GlobalTouch] End');
+    }, true);
+
+    console.log('[InitGlobalTouchEvents] 全局文檔級觸摸事件初始化成功');
   }
 
   /**
