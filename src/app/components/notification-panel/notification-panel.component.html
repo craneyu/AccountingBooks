@@ -1,0 +1,89 @@
+<div class="fixed inset-0 bg-black bg-opacity-30 z-40" (click)="closePanel()"></div>
+
+<div class="fixed right-0 top-0 h-screen w-full md:w-96 bg-white shadow-xl flex flex-col animate-slide-in-right z-50">
+  <!-- 頭部 -->
+  <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <fa-icon [icon]="faBell" class="text-primary text-lg"></fa-icon>
+      <div>
+        <h2 class="font-bold text-gray-800">通知</h2>
+        @if (unreadCount() > 0) {
+          <p class="text-xs text-gray-500">{{ unreadCount() }} 個未讀</p>
+        }
+      </div>
+    </div>
+    <button (click)="closePanel()" class="text-gray-500 hover:text-gray-700 transition-colors">
+      <fa-icon [icon]="faTimes" class="text-xl"></fa-icon>
+    </button>
+  </div>
+
+  <!-- 操作列 -->
+  <div class="border-b border-gray-200 p-3 flex gap-2">
+    <button (click)="markAllAsRead()"
+            *ngIf="unreadCount() > 0"
+            [disabled]="loading()"
+            class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+      <fa-icon [icon]="faCheckDouble" class="text-sm"></fa-icon>
+      全部標記已讀
+    </button>
+    <button (click)="deleteAllReadNotifications()"
+            *ngIf="hasReadNotifications()"
+            [disabled]="loading()"
+            class="flex-1 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 transition-colors rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+      <fa-icon [icon]="faTrash" class="text-sm"></fa-icon>
+      刪除已讀
+    </button>
+  </div>
+
+  <!-- 通知列表 -->
+  <div class="flex-1 overflow-y-auto">
+    @if (notifications.length === 0) {
+      <div class="flex flex-col items-center justify-center h-full text-center py-12 px-4">
+        <fa-icon [icon]="faBell" class="text-4xl text-gray-300 mb-3"></fa-icon>
+        <p class="text-gray-500 font-medium">暫無通知</p>
+        <p class="text-sm text-gray-400 mt-1">有新的旅程活動時會在這裡顯示</p>
+      </div>
+    } @else {
+      <div class="space-y-2 p-3">
+        @for (notification of notifications; track notification.id) {
+          <div [class]="'p-4 rounded-lg border-l-4 transition-colors cursor-pointer hover:shadow-md ' + getNotificationColor(notification.type)"
+               [class.opacity-60]="notification.isRead"
+               (click)="markAsRead(notification)">
+            <!-- 頭部 -->
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="text-xl flex-shrink-0">{{ getNotificationIcon(notification.type) }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-800 truncate">{{ notification.tripName }}</p>
+                  <p class="text-xs text-gray-500">{{ formatTime(notification.createdAt) }}</p>
+                </div>
+              </div>
+              @if (!notification.isRead) {
+                <span class="w-2 h-2 bg-primary rounded-full flex-shrink-0 ml-2"></span>
+              }
+            </div>
+
+            <!-- 訊息 -->
+            <p class="text-sm text-gray-700 mb-3 line-clamp-2">{{ notification.message }}</p>
+
+            <!-- 操作按鈕 -->
+            <div class="flex items-center justify-between text-xs">
+              <button (click)="markAsRead(notification)"
+                      *ngIf="!notification.isRead"
+                      (click)="$event.stopPropagation()"
+                      class="text-blue-600 hover:text-blue-700 font-medium">
+                標記已讀
+              </button>
+              <button (click)="deleteNotification(notification)"
+                      (click)="$event.stopPropagation()"
+                      [disabled]="deletingId() === notification.id"
+                      class="text-red-600 hover:text-red-700 font-medium disabled:opacity-50">
+                {{ deletingId() === notification.id ? '刪除中...' : '刪除' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
