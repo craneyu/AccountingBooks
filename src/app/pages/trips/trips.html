@@ -1,12 +1,14 @@
 <div class="space-y-6 animate-fade-in-up">
   <div class="flex items-center justify-between mb-8">
     <h2 class="text-2xl font-bold text-text">我的旅程</h2>
-    
-    <div class="flex gap-3" *ngIf="isAdmin()">
-      <a routerLink="/admin/dashboard" class="soft-btn bg-white text-text-light hover:text-primary shadow-soft-sm flex items-center gap-2">
-        <fa-icon [icon]="faTools"></fa-icon>
-        <span>管理後台</span>
-      </a>
+
+    <div class="flex gap-3">
+      @if (isAdmin()) {
+        <a routerLink="/admin/dashboard" class="soft-btn bg-white text-text-light hover:text-primary shadow-soft-sm flex items-center gap-2">
+          <fa-icon [icon]="faTools"></fa-icon>
+          <span>管理後台</span>
+        </a>
+      }
       <button (click)="openAddTrip()" class="soft-btn soft-btn-primary flex items-center gap-2">
         <fa-icon [icon]="faPlus"></fa-icon>
         <span>新增旅程</span>
@@ -18,14 +20,27 @@
     @for (trip of trips$ | async; track trip.id) {
       <a [routerLink]="['/trip', trip.id, 'expenses']" class="block relative group">
         <div class="soft-card hover:-translate-y-1 transition-transform duration-300 h-full flex flex-col">
-          <!-- Admin Actions -->
-          <div *ngIf="isAdmin()" class="absolute top-2 right-2 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button (click)="openEditTrip($event, trip)" class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-primary hover:text-primary-dark transition-colors">
-              <fa-icon [icon]="faEdit"></fa-icon>
+          <!-- Actions -->
+          <div class="absolute top-2 right-2 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            @if (isAdmin()) {
+              <button (click)="openEditTrip($event, trip)"
+                      class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-primary hover:text-primary-dark transition-colors"
+                      title="編輯">
+                <fa-icon [icon]="faEdit"></fa-icon>
+              </button>
+            }
+            <button (click)="openMembersDialog($event, trip)"
+                    class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-secondary hover:text-secondary-dark transition-colors"
+                    title="管理成員">
+              <fa-icon [icon]="faUsers"></fa-icon>
             </button>
-            <button (click)="deleteTrip($event, trip)" class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-danger hover:text-red-700 transition-colors">
-               <fa-icon [icon]="faTrash"></fa-icon>
-            </button>
+            @if (isAdmin()) {
+              <button (click)="deleteTrip($event, trip)"
+                      class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-danger hover:text-red-700 transition-colors"
+                      title="刪除">
+                 <fa-icon [icon]="faTrash"></fa-icon>
+              </button>
+            }
           </div>
 
           <!-- Cover Image / Placeholder -->
@@ -62,10 +77,20 @@
            <fa-icon [icon]="faSuitcaseRolling"></fa-icon>
          </div>
          <p class="text-xl font-medium">找不到進行中的旅程。</p>
-         <p class="text-sm mt-2">請聯繫管理員新增旅程。</p>
+         <p class="text-sm mt-2">點擊上方「新增旅程」按鈕建立新旅程。</p>
       </div>
     }
   </div>
 </div>
 
-<app-trip-dialog *ngIf="showTripDialog()" [trip]="selectedTrip()" (close)="showTripDialog.set(false)"></app-trip-dialog>
+@if (showTripDialog()) {
+  <app-trip-dialog [trip]="selectedTrip()" (close)="closeTripDialog()"></app-trip-dialog>
+}
+
+@if (showMembersDialog()) {
+  <app-trip-members-dialog
+    [tripId]="selectedTrip()?.id || ''"
+    [currentUserRole]="'owner'"
+    (close)="closeMembersDialog()">
+  </app-trip-members-dialog>
+}
