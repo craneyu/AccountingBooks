@@ -42,6 +42,17 @@
 
       <!-- 按鈕群組 -->
       <div class="flex items-center gap-2">
+        <!-- 搜尋篩選按鈕 -->
+        <button (click)="openSearchFilter()"
+                class="soft-btn-icon text-text-light hover:text-primary transition-colors relative"
+                [class.text-primary]="hasActiveFilters()"
+                title="搜尋與篩選">
+          <fa-icon [icon]="faSearch"></fa-icon>
+          @if (hasActiveFilters()) {
+            <span class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+          }
+        </button>
+
         <!-- 統計按鈕 -->
         <button (click)="openStatistics()"
                 class="soft-btn-icon text-text-light hover:text-primary transition-colors"
@@ -89,10 +100,23 @@
     </div>
   }
 
+  <!-- 篩選狀態提示 -->
+  @if (!isLoading() && hasActiveFilters()) {
+    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+      <div class="text-sm text-blue-800">
+        <strong>篩選結果：</strong> 顯示 <strong>{{ filterStats().filteredExpenses }}</strong> 筆
+        （共 <strong>{{ filterStats().totalExpenses }}</strong> 筆支出）
+      </div>
+      <button (click)="resetFilter()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+        清除篩選
+      </button>
+    </div>
+  }
+
   <!-- Expenses List -->
   @if (!isLoading()) {
     <div class="space-y-4">
-      @for (expense of expenses$ | async; track expense.id) {
+      @for (expense of filteredExpenses(); track expense.id) {
         <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
 
           <div class="flex items-center gap-4 flex-1">
@@ -199,5 +223,18 @@
       [currentUserRole]="currentMemberRole()"
       (close)="closeMembersDialog()">
     </app-trip-members-dialog>
+  }
+
+  <!-- Search & Filter Panel -->
+  @if (showSearchFilter()) {
+    <app-search-filter
+      [categories]="availableCategories()"
+      [paymentMethods]="availablePaymentMethods()"
+      [members]="availableMembers()"
+      [currencies]="currencies"
+      (filterApplied)="applyFilter($event)"
+      (filterReset)="resetFilter()"
+      (close)="closeSearchFilter()">
+    </app-search-filter>
   }
 </div>
