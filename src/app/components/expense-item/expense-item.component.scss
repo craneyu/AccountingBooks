@@ -32,7 +32,21 @@
     z-index: 10;
     flex-shrink: 0;
 
-    // 只在寬屏桌面版隱藏手機操作菜單（寬度 >= 1025px）
+    // 手機版（寬度 < 600px）：隱藏選單
+    @media (max-width: 599px) {
+      display: none;
+    }
+
+    // 平板版（寬度 600px - 1024px）：直接顯示按鈕
+    @media (min-width: 600px) and (max-width: 1024px) {
+      position: relative;
+      background-color: transparent;
+      width: auto;
+      height: auto;
+      padding: 0 8px 0 0;
+    }
+
+    // 寬屏桌面版（寬度 >= 1025px）：隱藏選單
     @media (min-width: 1025px) {
       display: none;
     }
@@ -76,27 +90,31 @@
     }
   }
 
-  // 內容部分（可滑動）
+  // 內容部分
   .expense-content {
     position: relative;
     z-index: 2;
-    transition: transform 0.2s ease-out;
+    display: flex;
+    align-items: stretch;
     background-color: inherit;
     pointer-events: auto;
 
-    // 手機版和平板版：允許 HammerJS 處理手勢（寬度 < 1025px）
-    @media (max-width: 1024px) {
+    // 手機版（寬度 < 600px）：允許滑動
+    @media (max-width: 599px) {
+      transition: transform 0.2s ease-out;
       touch-action: manipulation;
     }
 
-    // 寬屏桌面版：恢復正常（寬度 >= 1025px）
-    @media (min-width: 1025px) {
+    // 平板版（寬度 600px - 1024px）：不需要滑動
+    @media (min-width: 600px) and (max-width: 1024px) {
+      flex: 1;
       touch-action: auto;
     }
 
-    // 觸控時禁用 hover 效果
-    @media (hover: none) {
-      transition: transform 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    // 寬屏桌面版（寬度 >= 1025px）：不需要滑動
+    @media (min-width: 1025px) {
+      flex: 1;
+      touch-action: auto;
     }
   }
 
