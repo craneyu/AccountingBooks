@@ -82,4 +82,10 @@
   @if (isSliding()) {
     <div class="mobile-hint">滑動操作可用</div>
   }
+
+  <!-- 調試資訊（僅在開發模式顯示） -->
+  <div style="position: absolute; bottom: 2px; left: 2px; font-size: 9px; color: #999; background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 2px;">
+    <div>w:{{ slideOffset() }}</div>
+    <div *ngIf="canEdit">edit:✓</div>
+  </div>
 </div>

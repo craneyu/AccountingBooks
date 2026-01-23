@@ -102,6 +102,8 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
       // 延遲初始化以確保 DOM 完全載入
       setTimeout(() => {
         this.initializeHammer();
+        // 添加備用的原生觸摸事件監聽
+        this.initializeTouchEvents();
       }, 100);
     }
 
@@ -212,6 +214,57 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch (err) {
       console.error('HammerJS 初始化失敗:', err);
     }
+  }
+
+  private touchStartX = 0;
+  private touchStartY = 0;
+
+  /**
+   * 初始化原生觸摸事件（備用）
+   */
+  private initializeTouchEvents() {
+    if (!this.itemContainer) return;
+
+    const element = this.itemContainer.nativeElement;
+    const MENU_WIDTH = 140;
+    const TRIGGER_THRESHOLD = MENU_WIDTH / 2;
+
+    element.addEventListener('touchstart', (e: TouchEvent) => {
+      this.touchStartX = e.touches[0].clientX;
+      this.touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    element.addEventListener('touchmove', (e: TouchEvent) => {
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      const deltaX = touchX - this.touchStartX;
+      const deltaY = touchY - this.touchStartY;
+
+      // 檢查是否為水平移動
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
+        e.preventDefault();
+
+        // 只允許向左拖動
+        const offset = Math.min(0, Math.max(-MENU_WIDTH, deltaX));
+        this.slideOffset.set(offset);
+
+        // 根據拖動距離判斷是否應顯示選單
+        this.isSliding.set(offset < -TRIGGER_THRESHOLD);
+      }
+    }, { passive: false });
+
+    element.addEventListener('touchend', () => {
+      const currentOffset = this.slideOffset();
+      if (currentOffset < -TRIGGER_THRESHOLD) {
+        this.isSliding.set(true);
+        this.slideOffset.set(-MENU_WIDTH);
+      } else {
+        this.isSliding.set(false);
+        this.slideOffset.set(0);
+      }
+    }, { passive: true });
+
+    console.log('原生觸摸事件初始化成功');
   }
 
   /**
