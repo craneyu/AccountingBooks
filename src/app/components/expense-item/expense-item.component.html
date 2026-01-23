@@ -47,12 +47,18 @@
 
       <!-- 右側：金額 + 桌面版操作按鈕 -->
       <div class="text-right flex-shrink-0">
-        <div class="font-bold text-text">
-          {{ expense.amountInTWD | number }} TWD
-        </div>
+        <!-- 當地金額（粗體、加大字型） -->
         @if (expense.currency !== 'TWD') {
-          <div class="text-xs text-text-light">
+          <div class="font-bold text-text text-lg">
             {{ expense.amount | number }} {{ expense.currency }}
+          </div>
+          <div class="text-xs text-text-light">
+            ≈ {{ expense.amountInTWD | number }} TWD
+          </div>
+        }
+        @if (expense.currency === 'TWD') {
+          <div class="font-bold text-text text-lg">
+            {{ expense.amountInTWD | number }} TWD
           </div>
         }
 
