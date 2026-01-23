@@ -6,11 +6,12 @@ import { TripService } from '../../core/services/trip.service';
 import { CategoryService } from '../../core/services/category.service';
 import { TripMembersService } from '../../core/services/trip-members.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ExportService } from '../../core/services/export.service';
 import { Expense } from '../../core/models/expense.model';
 import { Trip } from '../../core/models/trip.model';
 import { TripMember } from '../../core/models/trip-member.model';
-import { Observable } from 'rxjs';
-import { shareReplay, switchMap } from 'rxjs/operators';
+import { Observable, firstValueFrom } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
   faPlus,
@@ -21,6 +22,9 @@ import {
   faImages,
   faUsers,
   faChartBar,
+  faDownload,
+  faFileExcel,
+  faFileZipper,
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
@@ -46,6 +50,7 @@ export class ExpensesComponent {
   private categoryService = inject(CategoryService);
   private membersService = inject(TripMembersService);
   private authService = inject(AuthService);
+  private exportService = inject(ExportService);
 
   tripId = this.route.snapshot.paramMap.get('tripId')!;
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
@@ -69,6 +74,11 @@ export class ExpensesComponent {
   faImages = faImages;
   faUsers = faUsers;
   faChartBar = faChartBar;
+  faDownload = faDownload;
+  faFileExcel = faFileExcel;
+  faFileZipper = faFileZipper;
+
+  exporting = signal(false);
 
   constructor() {
     // 加載分類圖標
@@ -384,5 +394,119 @@ export class ExpensesComponent {
 
   closeStatistics() {
     this.showStatistics.set(false);
+  }
+
+  async exportAsCSV() {
+    const expenses = this.currentExpenses();
+    const trip = await firstValueFrom(this.tripService.getTrip(this.tripId));
+
+    if (!trip || expenses.length === 0) {
+      Swal.fire({
+        title: '無法匯出',
+        text: '沒有支出資料可以匯出。',
+        icon: 'warning',
+        confirmButtonText: '確定'
+      });
+      return;
+    }
+
+    this.exporting.set(true);
+    try {
+      this.exportService.exportAsCSV(expenses, trip.name);
+      Swal.fire({
+        title: '匯出成功！',
+        text: 'CSV 檔案已下載。',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('CSV 匯出失敗:', error);
+      Swal.fire({
+        title: '匯出失敗',
+        text: '無法匯出 CSV 檔案。',
+        icon: 'error',
+        confirmButtonText: '確定'
+      });
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  async exportAsZIP() {
+    const expenses = this.currentExpenses();
+    const trip = await firstValueFrom(this.tripService.getTrip(this.tripId));
+
+    if (!trip || expenses.length === 0) {
+      Swal.fire({
+        title: '無法匯出',
+        text: '沒有支出資料可以匯出。',
+        icon: 'warning',
+        confirmButtonText: '確定'
+      });
+      return;
+    }
+
+    const stats = this.exportService.getExportStats(expenses);
+
+    const result = await Swal.fire({
+      title: '準備匯出 ZIP',
+      html: `
+        <div class="text-left text-sm">
+          <p><strong>支出筆數：</strong> ${stats.totalExpenses} 筆</p>
+          <p><strong>包含圖片：</strong> ${stats.totalImages} 張</p>
+          <p><strong>預估大小：</strong> 約 ${this.formatBytes(stats.totalSize)}</p>
+          <p class="mt-3 text-gray-600">包含完整的支出資料和收據圖片</p>
+        </div>
+      `,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: '開始下載',
+      cancelButtonText: '取消'
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.exporting.set(true);
+    try {
+      await Swal.fire({
+        title: '正在處理...',
+        text: '準備 ZIP 檔案中，請稍候',
+        icon: 'info',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      await this.exportService.exportAsZIP(expenses, trip);
+
+      Swal.fire({
+        title: '匯出成功！',
+        text: 'ZIP 檔案已下載。',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('ZIP 匯出失敗:', error);
+      Swal.fire({
+        title: '匯出失敗',
+        text: '無法匯出 ZIP 檔案。',
+        icon: 'error',
+        confirmButtonText: '確定'
+      });
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
 }
