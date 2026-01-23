@@ -86,7 +86,7 @@
                 <div *ngIf="isOwner()" class="relative">
                   <select
                     [value]="member.role"
-                    (change)="updateRole(member, $event)"
+                    (change)="updateRole(member, $any($event.target).value)"
                     class="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   >
                     <option value="owner">Owner</option>

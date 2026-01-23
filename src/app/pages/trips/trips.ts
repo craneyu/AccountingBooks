@@ -6,7 +6,7 @@ import { TripMembersService } from '../../core/services/trip-members.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Trip } from '../../core/models/trip.model';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faMapMarkedAlt, faCalendarAlt, faSuitcaseRolling, faPlus, faEdit, faTrash, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faMapMarkedAlt, faCalendarAlt, faSuitcaseRolling, faPlus, faEdit, faTrash, faUsers, faTools } from '@fortawesome/free-solid-svg-icons';
 import { TripDialogComponent } from '../../components/trip-dialog/trip-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
 import Swal from 'sweetalert2';
@@ -37,6 +37,7 @@ export class TripsComponent {
   faEdit = faEdit;
   faTrash = faTrash;
   faUsers = faUsers;
+  faTools = faTools;
 
   openAddTrip() {
     this.selectedTrip.set(null);
