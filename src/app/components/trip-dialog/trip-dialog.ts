@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { TripService } from '../../core/services/trip.service';
+import { TripMembersService } from '../../core/services/trip-members.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Trip } from '../../core/models/trip.model';
 import { Timestamp } from 'firebase/firestore';
@@ -24,6 +25,7 @@ export class TripDialogComponent {
 
   private fb = inject(FormBuilder);
   private tripService = inject(TripService);
+  private membersService = inject(TripMembersService);
   private authService = inject(AuthService);
   private storage = inject(Storage);
 
@@ -132,7 +134,22 @@ export class TripDialogComponent {
       } else {
         tripData.createdAt = Timestamp.now();
         tripData.createdBy = user?.id;
-        await this.tripService.addTrip(tripData);
+        tripData.ownerId = user?.id;
+        tripData.memberCount = 1;
+
+        // 新增旅程時獲得新建立旅程的 ID
+        const docRef = await this.tripService.addTrip(tripData);
+
+        // 為建立者自動建立 owner member
+        if (user && docRef.id) {
+          await this.membersService.addMemberWithUserId(docRef.id, user.id, {
+            displayName: user.displayName,
+            email: user.email,
+            role: 'owner',
+            joinedAt: Timestamp.now(),
+            addedBy: user.id
+          });
+        }
       }
       this.close.emit();
     } catch (err) {

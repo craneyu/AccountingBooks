@@ -1,13 +1,16 @@
 import { Component, inject, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { ExpenseService } from '../../core/services/expense.service';
 import { TripService } from '../../core/services/trip.service';
 import { CategoryService } from '../../core/services/category.service';
+import { TripMembersService } from '../../core/services/trip-members.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Expense } from '../../core/models/expense.model';
 import { Trip } from '../../core/models/trip.model';
+import { TripMember } from '../../core/models/trip-member.model';
 import { Observable } from 'rxjs';
-import { shareReplay } from 'rxjs/operators';
+import { shareReplay, switchMap } from 'rxjs/operators';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
   faPlus,
@@ -16,8 +19,10 @@ import {
   faTrash,
   faReceipt,
   faImages,
+  faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
+import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
 import { getIcon } from '../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
 import Swiper from 'swiper';
@@ -26,25 +31,31 @@ import { Navigation, Pagination } from 'swiper/modules';
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './expenses.html',
   styleUrl: './expenses.scss',
 })
 export class ExpensesComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private expenseService = inject(ExpenseService);
   private tripService = inject(TripService);
   private categoryService = inject(CategoryService);
+  private membersService = inject(TripMembersService);
+  private authService = inject(AuthService);
 
   tripId = this.route.snapshot.paramMap.get('tripId')!;
   trip$: Observable<Trip | undefined> = this.tripService.getTrip(this.tripId).pipe(shareReplay(1));
   expenses$: Observable<Expense[]> = this.expenseService.getExpenses(this.tripId);
+  currentMemberRole = signal<'owner' | 'editor' | 'viewer' | null>(null);
+  isLoading = signal(true);
 
   categoryIconMap = signal<Record<string, string>>({});
 
   showDialog = false;
   selectedExpense: Expense | null = null;
+  showMembersDialog = signal(false);
 
   faPlus = faPlus;
   faArrowLeft = faArrowLeft;
@@ -52,14 +63,47 @@ export class ExpensesComponent {
   faTrash = faTrash;
   faReceipt = faReceipt;
   faImages = faImages;
+  faUsers = faUsers;
 
   constructor() {
+    // 加載分類圖標
     this.categoryService.getCategories().subscribe((cats) => {
       const map: Record<string, string> = {};
       cats.forEach((c) => {
         if (c.icon) map[c.name] = c.icon;
       });
       this.categoryIconMap.set(map);
+    });
+
+    // 檢查使用者是否為旅程成員並加載其角色
+    this.checkMembership();
+  }
+
+  private checkMembership(): void {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      this.isLoading.set(false);
+      return;
+    }
+
+    this.membersService.getMemberRole(this.tripId, currentUser.id).then((role) => {
+      if (role) {
+        this.currentMemberRole.set(role as 'owner' | 'editor' | 'viewer');
+      } else {
+        // 非成員，重導向至 trips 頁面
+        Swal.fire({
+          title: '無法訪問',
+          text: '您沒有權限查看此旅程。',
+          icon: 'error',
+          confirmButtonText: '返回'
+        }).then(() => {
+          this.router.navigate(['/trips']);
+        });
+      }
+      this.isLoading.set(false);
+    }).catch((error) => {
+      console.error('檢查成員資格失敗:', error);
+      this.isLoading.set(false);
     });
   }
 
@@ -229,6 +273,26 @@ export class ExpensesComponent {
   }
 
   async delete(expense: Expense) {
+    // 檢查刪除權限
+    const currentUser = this.authService.currentUser();
+    const role = this.currentMemberRole();
+
+    // 檢查使用者是否有權刪除該支出
+    const isOwner = role === 'owner';
+    const isEditor = role === 'editor';
+    const isExpenseOwner = expense.submittedBy === currentUser?.id;
+    const canDelete = isOwner || isEditor || isExpenseOwner;
+
+    if (!canDelete) {
+      Swal.fire({
+        title: '無法刪除',
+        text: '您沒有權限刪除此支出。',
+        icon: 'error',
+        confirmButtonText: '確定'
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: '確定要刪除嗎？',
       text: '刪除後將無法復原！',
@@ -262,5 +326,45 @@ export class ExpensesComponent {
   closeDialog() {
     this.showDialog = false;
     this.selectedExpense = null;
+  }
+
+  openMembersDialog() {
+    if (this.currentMemberRole() !== 'owner') {
+      Swal.fire({
+        title: '無法管理成員',
+        text: '只有旅程所有者可以管理成員。',
+        icon: 'error',
+        confirmButtonText: '確定'
+      });
+      return;
+    }
+    this.showMembersDialog.set(true);
+  }
+
+  closeMembersDialog() {
+    this.showMembersDialog.set(false);
+  }
+
+  canEditExpense(expense: Expense): boolean {
+    const currentUser = this.authService.currentUser();
+    const role = this.currentMemberRole();
+
+    // Owner 和 Editor 可編輯所有支出
+    if (role === 'owner' || role === 'editor') {
+      return true;
+    }
+
+    // Viewer 不能編輯，但支出擁有者可編輯自己的支出
+    if (role === 'viewer' && expense.submittedBy === currentUser?.id) {
+      return true;
+    }
+
+    return false;
+  }
+
+  canAddExpense(): boolean {
+    const role = this.currentMemberRole();
+    // Owner 和 Editor 可新增支出，Viewer 不能
+    return role === 'owner' || role === 'editor';
   }
 }

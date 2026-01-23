@@ -1,12 +1,22 @@
 <div class="animate-fade-in-up pb-24">
+  <!-- 加載狀態 -->
+  @if (isLoading()) {
+    <div class="flex items-center justify-center py-20">
+      <div class="text-center">
+        <fa-icon [icon]="faReceipt" class="text-3xl text-primary mb-4 animate-spin"></fa-icon>
+        <p class="text-text-light">載入中...</p>
+      </div>
+    </div>
+  }
+
   <!-- Header -->
-  @if (trip$ | async; as trip) {
+  @if (!isLoading() && (trip$ | async); as trip) {
     <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-1">
          <a routerLink="/trips" class="soft-btn-icon text-text-light">
            <fa-icon [icon]="faArrowLeft"></fa-icon>
          </a>
-         <div>
+         <div class="flex-1">
            <h1 class="text-2xl font-bold text-text">{{ trip.name }}</h1>
            @if (trip.startDate) {
              <p class="text-sm text-text-light">
@@ -15,85 +25,108 @@
            }
          </div>
       </div>
+
+      <!-- 成員管理按鈕 -->
+      <button (click)="openMembersDialog()"
+              class="soft-btn-icon text-text-light hover:text-primary transition-colors"
+              title="管理成員">
+        <fa-icon [icon]="faUsers"></fa-icon>
+      </button>
     </div>
   }
 
   <!-- Expenses List -->
-  <div class="space-y-4">
-    @for (expense of expenses$ | async; track expense.id) {
-      <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
-        
-        <div class="flex items-center gap-4 flex-1">
-          <!-- Icon -->
-          <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xl flex-shrink-0 relative overflow-hidden">
-             <!-- Show dynamic icon -->
-             <fa-icon [icon]="getCategoryIcon(expense.category)"></fa-icon>
-             
-             <!-- If no icon defined, show the first letter -->
-             @if (isFallbackIcon(expense.category)) {
-               <span class="absolute inset-0 flex items-center justify-center font-black uppercase mt-1">
-                 {{ expense.category.charAt(0) }}
-               </span>
-             }
-          </div>
-          
-          <div class="min-w-0">
-            <h3 class="font-bold text-text truncate pr-2">{{ expense.item }}</h3>
-            <div class="flex flex-wrap items-center gap-2 text-xs text-text-light">
-               <span>{{ expense.expenseDate.toDate() | date:'yyyy/MM/dd' }}</span>
-               <span>•</span>
-               <span>{{ expense.paymentMethod }}</span>
-               @if (expense.note) {
-                 <span class="truncate max-w-[100px]">• {{ expense.note }}</span>
+  @if (!isLoading()) {
+    <div class="space-y-4">
+      @for (expense of expenses$ | async; track expense.id) {
+        <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
+
+          <div class="flex items-center gap-4 flex-1">
+            <!-- Icon -->
+            <div class="w-12 h-12 rounded-xl bg-surface shadow-soft-inset flex items-center justify-center text-primary text-xl flex-shrink-0 relative overflow-hidden">
+               <!-- Show dynamic icon -->
+               <fa-icon [icon]="getCategoryIcon(expense.category)"></fa-icon>
+
+               <!-- If no icon defined, show the first letter -->
+               @if (isFallbackIcon(expense.category)) {
+                 <span class="absolute inset-0 flex items-center justify-center font-black uppercase mt-1">
+                   {{ expense.category.charAt(0) }}
+                 </span>
                }
             </div>
-          </div>
-        </div>
 
-        <div class="text-right flex-shrink-0">
-          <div class="font-bold text-text">
-            {{ expense.amountInTWD | number }} TWD
-          </div>
-          @if (expense.currency !== 'TWD') {
-            <div class="text-xs text-text-light">
-               {{ expense.amount | number }} {{ expense.currency }}
+            <div class="min-w-0 flex-1">
+              <h3 class="font-bold text-text truncate pr-2">{{ expense.item }}</h3>
+              <div class="flex flex-wrap items-center gap-2 text-xs text-text-light">
+                 <span>{{ expense.expenseDate.toDate() | date:'yyyy/MM/dd' }}</span>
+                 <span>•</span>
+                 <span>{{ expense.paymentMethod }}</span>
+                 @if (expense.submittedByName) {
+                   <span>•</span>
+                   <span>{{ expense.isDeletedUser ? '已註銷使用者' : expense.submittedByName }}</span>
+                 }
+                 @if (expense.note) {
+                   <span class="truncate max-w-[100px]">• {{ expense.note }}</span>
+                 }
+              </div>
             </div>
-          }
-
-          <!-- Actions -->
-          <div class="flex items-center justify-end gap-3 mt-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            @if (expense.receiptImageUrls?.length || expense.receiptImageUrl) {
-              <button (click)="viewReceipts(expense)"
-                      class="text-text-light hover:text-primary transition-colors"
-                      [title]="'查看照片 (' + ((expense.receiptImageUrls?.length) || 1) + ')'">
-                <fa-icon [icon]="faImages"></fa-icon>
-              </button>
-            }
-            <button (click)="openEdit(expense)" class="text-text-light hover:text-primary transition-colors" title="編輯">
-              <fa-icon [icon]="faEdit"></fa-icon>
-            </button>
-            <button (click)="delete(expense)" class="text-text-light hover:text-danger transition-colors" title="刪除">
-              <fa-icon [icon]="faTrash"></fa-icon>
-            </button>
           </div>
-        </div>
 
-      </div>
-    } @empty {
-      <div class="text-center py-20 text-text-light opacity-60 flex flex-col items-center">
-        <div class="w-20 h-20 rounded-full bg-surface shadow-soft-inset flex items-center justify-center mb-4 text-3xl">
-            <fa-icon [icon]="faReceipt"></fa-icon>
+          <div class="text-right flex-shrink-0">
+            <div class="font-bold text-text">
+              {{ expense.amountInTWD | number }} TWD
+            </div>
+            @if (expense.currency !== 'TWD') {
+              <div class="text-xs text-text-light">
+                 {{ expense.amount | number }} {{ expense.currency }}
+              </div>
+            }
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3 mt-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+              @if (expense.receiptImageUrls?.length || expense.receiptImageUrl) {
+                <button (click)="viewReceipts(expense)"
+                        class="text-text-light hover:text-primary transition-colors"
+                        [title]="'查看照片 (' + ((expense.receiptImageUrls?.length) || 1) + ')'">
+                  <fa-icon [icon]="faImages"></fa-icon>
+                </button>
+              }
+              @if (canEditExpense(expense)) {
+                <button (click)="openEdit(expense)" class="text-text-light hover:text-primary transition-colors" title="編輯">
+                  <fa-icon [icon]="faEdit"></fa-icon>
+                </button>
+              }
+              @if (canEditExpense(expense)) {
+                <button (click)="delete(expense)" class="text-text-light hover:text-danger transition-colors" title="刪除">
+                  <fa-icon [icon]="faTrash"></fa-icon>
+                </button>
+              }
+            </div>
+          </div>
+
         </div>
-        <p>尚無支出紀錄。</p>
-        <p class="text-sm">點擊 + 按鈕新增一筆。</p>
-      </div>
-    }
-  </div>
+      } @empty {
+        <div class="text-center py-20 text-text-light opacity-60 flex flex-col items-center">
+          <div class="w-20 h-20 rounded-full bg-surface shadow-soft-inset flex items-center justify-center mb-4 text-3xl">
+              <fa-icon [icon]="faReceipt"></fa-icon>
+          </div>
+          <p>尚無支出紀錄。</p>
+          @if (canAddExpense()) {
+            <p class="text-sm">點擊 + 按鈕新增一筆。</p>
+          } @else {
+            <p class="text-sm">您沒有權限新增支出。</p>
+          }
+        </div>
+      }
+    </div>
+  }
 
   <!-- FAB Add Button -->
-  <button (click)="openAdd()" class="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-primary text-white shadow-soft-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform z-40">
-    <fa-icon [icon]="faPlus"></fa-icon>
-  </button>
+  @if (!isLoading() && canAddExpense()) {
+    <button (click)="openAdd()" class="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-primary text-white shadow-soft-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform z-40">
+      <fa-icon [icon]="faPlus"></fa-icon>
+    </button>
+  }
 
   <!-- Dialog -->
   @if (showDialog) {
@@ -103,5 +136,14 @@
       [expense]="selectedExpense"
       (close)="closeDialog()">
     </app-expense-dialog>
+  }
+
+  <!-- Members Dialog -->
+  @if (showMembersDialog()) {
+    <app-trip-members-dialog
+      [tripId]="tripId"
+      [currentUserRole]="currentMemberRole()"
+      (close)="closeMembersDialog()">
+    </app-trip-members-dialog>
   }
 </div>
