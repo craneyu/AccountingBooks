@@ -11,4 +11,6 @@ export interface User {
   createdBy?: string;
   lastLoginAt: Timestamp;
   updatedAt: Timestamp;
+  deleteRequestedAt?: Timestamp; // 新增：帳號註銷申請時間
+  deletedAt?: Timestamp; // 新增：帳號實際刪除時間
 }

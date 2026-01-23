@@ -1,0 +1,88 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 認證檢查
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 授權使用者檢查
+    function isAuthorizedUser() {
+      return isAuthenticated()
+        && exists(/databases/default/documents/users/$(request.auth.uid))
+        && get(/databases/default/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    // 系統管理者檢查
+    function isSystemAdmin() {
+      return isAuthorizedUser()
+        && get(/databases/default/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // 檢查檔案大小限制
+    function isValidSize() {
+      return request.resource.size <= 10 * 1024 * 1024; // 10MB 限制
+    }
+
+    // 檢查檔案類型
+    function isValidContentType() {
+      return request.resource.contentType in [
+        'image/jpeg',
+        'image/png',
+        'image/heic',
+        'image/heif'
+      ];
+    }
+
+    // 收據圖片目錄：receipts/{tripId}/{filename}
+    match /receipts/{tripId}/{allPaths=**} {
+      // 認證使用者可讀取自己有權限的旅程收據
+      allow read: if isAuthorizedUser()
+                  && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid));
+
+      // 系統管理員可讀取所有收據
+      allow read: if isSystemAdmin();
+
+      // 有編輯權限的成員可上傳收據
+      allow write: if isAuthorizedUser()
+                   && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid))
+                   && (get(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role in ['owner', 'editor'])
+                   && isValidSize()
+                   && isValidContentType();
+    }
+
+    // 旅程封面圖片目錄：trip-covers/{tripId}/{filename}
+    match /trip-covers/{tripId}/{allPaths=**} {
+      // 認證使用者可讀取自己有權限的旅程封面
+      allow read: if isAuthorizedUser()
+                  && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid));
+
+      // 系統管理員可讀取所有封面
+      allow read: if isSystemAdmin();
+
+      // 旅程 owner 可上傳或修改封面
+      allow write: if isAuthorizedUser()
+                   && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid))
+                   && get(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role == 'owner'
+                   && isValidSize()
+                   && isValidContentType();
+    }
+
+    // 使用者頭像目錄：avatars/{userId}/{filename}
+    match /avatars/{userId}/{allPaths=**} {
+      // 認證使用者可讀取
+      allow read: if isAuthorizedUser();
+
+      // 使用者可上傳自己的頭像
+      allow write: if isAuthorizedUser()
+                   && request.auth.uid == userId
+                   && isValidSize()
+                   && isValidContentType();
+    }
+
+    // 預設拒絕所有其他存取
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
