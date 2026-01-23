@@ -1,4 +1,18 @@
 <div class="animate-fade-in-up pb-24">
+  <!-- 統計視圖 -->
+  @if (showStatistics() && !isLoading()) {
+    <div class="mb-6 border-b-2 border-gray-200 pb-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">統計與圖表</h2>
+        <button (click)="closeStatistics()"
+                class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium">
+          關閉統計
+        </button>
+      </div>
+      <app-statistics [expenses]="currentExpenses()"></app-statistics>
+    </div>
+  }
+
   <!-- 加載狀態 -->
   @if (isLoading()) {
     <div class="flex items-center justify-center py-20">
@@ -26,12 +40,22 @@
          </div>
       </div>
 
-      <!-- 成員管理按鈕 -->
-      <button (click)="openMembersDialog()"
-              class="soft-btn-icon text-text-light hover:text-primary transition-colors"
-              title="管理成員">
-        <fa-icon [icon]="faUsers"></fa-icon>
-      </button>
+      <!-- 按鈕群組 -->
+      <div class="flex items-center gap-2">
+        <!-- 統計按鈕 -->
+        <button (click)="openStatistics()"
+                class="soft-btn-icon text-text-light hover:text-primary transition-colors"
+                title="查看統計">
+          <fa-icon [icon]="faChartBar"></fa-icon>
+        </button>
+
+        <!-- 成員管理按鈕 -->
+        <button (click)="openMembersDialog()"
+                class="soft-btn-icon text-text-light hover:text-primary transition-colors"
+                title="管理成員">
+          <fa-icon [icon]="faUsers"></fa-icon>
+        </button>
+      </div>
     </div>
   }
 

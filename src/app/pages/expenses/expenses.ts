@@ -20,9 +20,11 @@ import {
   faReceipt,
   faImages,
   faUsers,
+  faChartBar,
 } from '@fortawesome/free-solid-svg-icons';
 import { ExpenseDialogComponent } from '../../components/expense-dialog/expense-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
+import { StatisticsComponent } from './statistics/statistics.component';
 import { getIcon } from '../../core/utils/icon-utils';
 import Swal from 'sweetalert2';
 import Swiper from 'swiper';
@@ -31,7 +33,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent],
+  imports: [CommonModule, RouterModule, FontAwesomeModule, ExpenseDialogComponent, TripMembersDialogComponent, StatisticsComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './expenses.html',
   styleUrl: './expenses.scss',
@@ -56,6 +58,8 @@ export class ExpensesComponent {
   showDialog = false;
   selectedExpense: Expense | null = null;
   showMembersDialog = signal(false);
+  showStatistics = signal(false);
+  currentExpenses = signal<Expense[]>([]);
 
   faPlus = faPlus;
   faArrowLeft = faArrowLeft;
@@ -64,6 +68,7 @@ export class ExpensesComponent {
   faReceipt = faReceipt;
   faImages = faImages;
   faUsers = faUsers;
+  faChartBar = faChartBar;
 
   constructor() {
     // 加載分類圖標
@@ -73,6 +78,11 @@ export class ExpensesComponent {
         if (c.icon) map[c.name] = c.icon;
       });
       this.categoryIconMap.set(map);
+    });
+
+    // 訂閱支出資料以便統計使用
+    this.expenses$.subscribe((expenses) => {
+      this.currentExpenses.set(expenses);
     });
 
     // 檢查使用者是否為旅程成員並加載其角色
@@ -366,5 +376,13 @@ export class ExpensesComponent {
     const role = this.currentMemberRole();
     // Owner 和 Editor 可新增支出，Viewer 不能
     return role === 'owner' || role === 'editor';
+  }
+
+  openStatistics() {
+    this.showStatistics.set(true);
+  }
+
+  closeStatistics() {
+    this.showStatistics.set(false);
   }
 }
