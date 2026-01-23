@@ -47,14 +47,17 @@ export class ExchangeRateService {
 
   private fetchAndStoreRate(currency: string, docId: string): Observable<number> {
     const url = `${environment.exchangeRateApiBaseUrl}${currency}`;
-    
+
     return this.http.get<any>(url).pipe(
       map(response => {
         const rate = response.rates['TWD'];
-        if (!rate) throw new Error('TWD rate not found');
+        if (!rate) {
+          console.error(`Failed to get TWD rate for ${currency} from API response:`, response);
+          throw new Error(`TWD rate not found for ${currency}`);
+        }
         return rate;
       }),
-      switchMap(async rate => {
+      switchMap(rate => {
         const now = Timestamp.now();
         const record: ExchangeRate = {
           id: docId,
@@ -65,16 +68,19 @@ export class ExchangeRateService {
           fetchedAt: now,
           source: 'ExchangeRate-API'
         };
-        
-        // Save to Firestore
-        await setDoc(doc(this.firestore, 'exchangeRates', docId), record);
-        
-        this.memCache.set(docId, rate);
-        return rate;
+
+        // Save to Firestore and return rate
+        return from(
+          setDoc(doc(this.firestore, 'exchangeRates', docId), record).then(() => {
+            this.memCache.set(docId, rate);
+            return rate;
+          })
+        );
       }),
       catchError(err => {
-        console.error('Failed to fetch exchange rate', err);
-        throw err;
+        console.error(`Failed to fetch exchange rate for ${currency}:`, err);
+        // 返回 1 作為備用（用戶可以手動輸入）
+        return of(1);
       })
     );
   }

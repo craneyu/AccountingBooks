@@ -77,14 +77,44 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private resizeListener = () => {
+    // 如果切換到桌面版（寬度 >= 1025px），銷毀 Hammer
+    if (window.innerWidth >= 1025 && this.hammer) {
+      this.hammer.destroy();
+      this.hammer = undefined;
+      this.isSliding.set(false);
+      this.slideOffset.set(0);
+    }
+    // 如果切換回手機/平板版（寬度 < 1025px），重新初始化
+    else if (window.innerWidth < 1025 && !this.hammer) {
+      this.initializeHammer();
+    }
+  };
+
   ngAfterViewInit() {
-    this.initializeHammer();
+    // 手機版和平板版使用 HammerJS（寬度 < 1025px）
+    // 桌面版（寬度 >= 1025px）使用 hover 按鈕
+    console.log('[ExpenseItem] Window width:', window.innerWidth, 'Needs HammerJS:', window.innerWidth < 1025);
+    if (window.innerWidth < 1025) {
+      // 延遲初始化以確保 DOM 完全載入
+      setTimeout(() => {
+        this.initializeHammer();
+      }, 100);
+    }
+
+    // 監聽視窗大小變化
+    window.addEventListener('resize', this.resizeListener);
   }
 
   ngOnDestroy() {
+    // 銷毀 HammerJS
     if (this.hammer) {
       this.hammer.destroy();
+      this.hammer = undefined;
     }
+
+    // 移除視窗大小變化監聽器
+    window.removeEventListener('resize', this.resizeListener);
   }
 
   private initializeHammer() {
@@ -98,60 +128,82 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // 建立 Hammer 管理器
-    const manager = new HammerLib.Manager(element);
+    try {
+      // 建立 Hammer 管理器，禁用預設的觸摸動作
+      const manager = new HammerLib.Manager(element, {
+        recognizers: [
+          [HammerLib.Pan, {
+            direction: HammerLib.DIRECTION_HORIZONTAL,
+            threshold: 5,
+            pointers: 1
+          }],
+          [HammerLib.Swipe, {
+            direction: HammerLib.DIRECTION_HORIZONTAL,
+            threshold: 10,
+            velocity: 0.3,
+            pointers: 1
+          }],
+        ]
+      });
 
-    // 添加 swipe 識別器
-    const swipe = new HammerLib.Swipe({
-      threshold: 10,
-      velocity: 0.3
-    });
+      this.hammer = manager;
 
-    // 添加 pan 識別器（用於更流暢的拖動）
-    const pan = new HammerLib.Pan({
-      threshold: 0,
-      pointers: 1
-    });
+      // 選單寬度常數
+      const MENU_WIDTH = 140;
+      const TRIGGER_THRESHOLD = MENU_WIDTH / 2;
 
-    manager.add([swipe, pan]);
-    this.hammer = manager;
+      // 監聽左滑事件
+      manager.on('swipeleft', (e: any) => {
+        e.preventDefault();
+        this.isSliding.set(true);
+        this.slideOffset.set(-MENU_WIDTH);
+      });
 
-    // 監聽左滑事件
-    manager.on('swipeleft', () => {
-      this.isSliding.set(true);
-      this.slideOffset.set(-120); // 選單寬度
-    });
+      // 監聽右滑事件（關閉選單）
+      manager.on('swiperight', (e: any) => {
+        e.preventDefault();
+        this.isSliding.set(false);
+        this.slideOffset.set(0);
+      });
 
-    // 監聽右滑事件（關閉選單）
-    manager.on('swiperight', () => {
-      this.isSliding.set(false);
-      this.slideOffset.set(0);
-    });
+      // 監聽 pan 事件（拖動中的即時反饋）
+      manager.on('panstart', () => {
+        console.log('Pan start');
+      });
 
-    // 監聽 pan 事件（拖動中的即時反饋）
-    manager.on('pan', (e: any) => {
-      const INPUT_MOVE = 1;
-      const INPUT_END = 4;
-
-      if (e.type === INPUT_MOVE) {
-        // 只允許向左拖動
-        const offset = Math.min(0, Math.max(-120, e.deltaX));
-        this.slideOffset.set(offset);
-
-        // 根據拖動距離判斷是否應顯示選單
-        this.isSliding.set(offset < -60);
-      } else if (e.type === INPUT_END) {
-        // 拖動結束時，決定是否保持選單打開
-        const currentOffset = this.slideOffset();
-        if (currentOffset < -60) {
-          this.isSliding.set(true);
-          this.slideOffset.set(-120);
-        } else {
-          this.isSliding.set(false);
-          this.slideOffset.set(0);
+      manager.on('pan', (e: any) => {
+        // 檢查是否為水平移動
+        if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+          return; // 垂直移動，由瀏覽器處理頁面滾動
         }
-      }
-    });
+
+        e.preventDefault();
+
+        // 拖動進行中
+        if (!e.isFinal) {
+          // 只允許向左拖動
+          const offset = Math.min(0, Math.max(-MENU_WIDTH, e.deltaX));
+          this.slideOffset.set(offset);
+
+          // 根據拖動距離判斷是否應顯示選單
+          this.isSliding.set(offset < -TRIGGER_THRESHOLD);
+        } else {
+          // 拖動結束（指尖抬起）
+          const currentOffset = this.slideOffset();
+          if (currentOffset < -TRIGGER_THRESHOLD) {
+            this.isSliding.set(true);
+            this.slideOffset.set(-MENU_WIDTH);
+          } else {
+            this.isSliding.set(false);
+            this.slideOffset.set(0);
+          }
+        }
+      });
+
+      console.log('HammerJS 初始化成功');
+    } catch (err) {
+      console.error('HammerJS 初始化失敗:', err);
+    }
   }
 
   /**
