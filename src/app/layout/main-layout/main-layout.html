@@ -18,6 +18,19 @@
 
       <!-- User Actions -->
       <div class="flex items-center gap-4">
+        <!-- Notification Bell -->
+        <button (click)="toggleNotificationPanel()"
+                class="soft-btn-icon text-text-light hover:text-primary transition-colors relative"
+                title="通知"
+                *ngIf="currentUser()">
+          <fa-icon [icon]="faBell"></fa-icon>
+          <!-- Notification Badge -->
+          <span *ngIf="unreadCount() > 0"
+                class="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white rounded-full text-xs font-bold flex items-center justify-center">
+            {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+          </span>
+        </button>
+
         <div class="hidden md:flex items-center gap-2 text-text text-sm font-medium" *ngIf="currentUser() as user">
           <div *ngIf="user.photoURL" class="w-8 h-8 rounded-full overflow-hidden shadow-soft-inset border-2 border-white">
             <img [src]="user.photoURL" [alt]="user.displayName" class="w-full h-full object-cover">
@@ -44,4 +57,13 @@
   <footer class="py-6 text-center text-text-light text-sm opacity-60">
     <p>{{ settings().siteName }} &copy; 2026</p>
   </footer>
+
+  <!-- Notification Panel -->
+  <app-notification-panel
+    *ngIf="showNotificationPanel()"
+    [notifications]="notifications()"
+    (notificationRead)="onNotificationRead($event)"
+    (notificationDeleted)="onNotificationDeleted($event)"
+    (close)="closeNotificationPanel()">
+  </app-notification-panel>
 </div>
