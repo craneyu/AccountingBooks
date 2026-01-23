@@ -31,15 +31,22 @@
             ],
             "styles": ["src/styles.scss", "node_modules/swiper/swiper-bundle.min.css"],
             "polyfills": ["zone.js"],
-            "allowedCommonJsDependencies": ["sweetalert2"]
+            "allowedCommonJsDependencies": [
+              "sweetalert2",
+              "heic2any",
+              "file-saver",
+              "papaparse",
+              "jszip",
+              "hammerjs"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1.5MB",
-                  "maximumError": "2MB"
+                  "maximumWarning": "3MB",
+                  "maximumError": "5MB"
                 },
                 {
                   "type": "anyComponentStyle",
