@@ -49,6 +49,36 @@
           <fa-icon [icon]="faChartBar"></fa-icon>
         </button>
 
+        <!-- 匯出按鈕下拉菜單 -->
+        <div class="relative group">
+          <button class="soft-btn-icon text-text-light hover:text-primary transition-colors"
+                  title="匯出支出資料"
+                  [disabled]="exporting()">
+            <fa-icon [icon]="faDownload"></fa-icon>
+          </button>
+          <!-- 下拉菜單 -->
+          <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-soft opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <button (click)="exportAsCSV()"
+                    [disabled]="exporting()"
+                    class="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors flex items-center gap-2 border-b border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              <fa-icon [icon]="faFileExcel" class="text-green-500"></fa-icon>
+              <div>
+                <p class="font-medium text-sm text-gray-800">匯出 CSV</p>
+                <p class="text-xs text-gray-500">支出資料表格</p>
+              </div>
+            </button>
+            <button (click)="exportAsZIP()"
+                    [disabled]="exporting()"
+                    class="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <fa-icon [icon]="faFileZipper" class="text-blue-500"></fa-icon>
+              <div>
+                <p class="font-medium text-sm text-gray-800">匯出 ZIP</p>
+                <p class="text-xs text-gray-500">資料 + 所有收據</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- 成員管理按鈕 -->
         <button (click)="openMembersDialog()"
                 class="soft-btn-icon text-text-light hover:text-primary transition-colors"
