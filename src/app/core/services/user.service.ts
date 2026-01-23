@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { Firestore, collection, collectionData, doc, updateDoc, query, orderBy, addDoc, setDoc, deleteDoc } from '@angular/fire/firestore';
 import { Functions, httpsCallable } from '@angular/fire/functions';
 import { User } from '../models/user.model';
@@ -10,7 +10,7 @@ import { Timestamp } from 'firebase/firestore';
 })
 export class UserService {
   private firestore = inject(Firestore);
-  private functions = inject(Functions);
+  private injector = inject(Injector);
 
   getUsers(): Observable<User[]> {
     const usersRef = collection(this.firestore, 'users');
@@ -100,7 +100,16 @@ export class UserService {
    * 同步所有使用者的 photoURL（管理員功能）
    */
   async syncAllUsersPhotoURL(): Promise<any> {
-    const syncFn = httpsCallable(this.functions, 'syncAllUsersPhotoURL');
-    return syncFn({});
+    try {
+      const functions = this.injector.get(Functions, null);
+      if (!functions) {
+        throw new Error('Firebase Functions 不可用');
+      }
+      const syncFn = httpsCallable(functions, 'syncAllUsersPhotoURL');
+      return syncFn({});
+    } catch (error) {
+      console.error('[UserService] 同步用户头像失败:', error);
+      throw error;
+    }
   }
 }
