@@ -1,0 +1,118 @@
+.expense-item-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+
+  // 背景選單
+  .action-menu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 120px;
+    display: flex;
+    gap: 0;
+    z-index: 1;
+
+    .action-btn {
+      flex: 1;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: background-color 0.2s ease;
+      color: white;
+
+      &.view-btn {
+        background-color: #3b82f6; // blue
+        &:active {
+          background-color: #2563eb;
+        }
+      }
+
+      &.edit-btn {
+        background-color: #10b981; // green
+        &:active {
+          background-color: #059669;
+        }
+      }
+
+      &.delete-btn {
+        background-color: #ef4444; // red
+        &:active {
+          background-color: #dc2626;
+        }
+      }
+
+      @media (max-width: 768px) {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  // 內容部分（可滑動）
+  .expense-content {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease-out;
+    background-color: inherit;
+
+    // 觸控時禁用 hover 效果
+    @media (hover: none) {
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    }
+  }
+
+  // 手機版提示文字
+  .mobile-hint {
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    font-size: 0.65rem;
+    color: #999;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    animation: fadeOut 0.5s ease-in 1.5s forwards;
+
+    @media (min-width: 769px) {
+      display: none;
+    }
+  }
+}
+
+// 動畫
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+// 響應式調整
+@media (max-width: 640px) {
+  .expense-item-wrapper {
+    .action-menu {
+      width: 100px; // 手機版選單稍窄
+    }
+
+    .expense-content {
+      transition: transform 0.25s ease-out;
+    }
+  }
+}
+
+// iPad 優化（44x44pt 觸控區域）
+@media (min-width: 768px) and (hover: none) {
+  .expense-item-wrapper {
+    .action-btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}
