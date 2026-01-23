@@ -32,9 +32,9 @@
     z-index: 10;
     flex-shrink: 0;
 
-    // 手機版（寬度 < 600px）：通過 overflow: hidden 隱藏，等待左滑露出
+    // 手機版（寬度 < 600px）：隱藏在右側，等待左滑露出
     @media (max-width: 599px) {
-      // 保持 display: flex，允許 HammerJS 觸發滑動露出
+      right: -140px; // 將按鈕推出視圖，overflow: hidden 會隱藏
     }
 
     // 平板版（寬度 600px - 1024px）：直接顯示按鈕
