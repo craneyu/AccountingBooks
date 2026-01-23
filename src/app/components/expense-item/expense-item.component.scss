@@ -9,7 +9,7 @@
 
   // 手機版和平板版設置（寬度 < 1025px）
   @media (max-width: 1024px) {
-    touch-action: manipulation;
+    touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
   }
