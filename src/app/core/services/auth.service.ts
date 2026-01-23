@@ -152,8 +152,17 @@ export class AuthService {
 
       if (userSnap.exists()) {
         const userData = userSnap.data() as User;
-        await updateDoc(userRef, { lastLoginAt: now });
-        return { ...userData, id: firebaseUser.uid };
+        await updateDoc(userRef, {
+          lastLoginAt: now,
+          photoURL: firebaseUser.photoURL || undefined,
+          displayName: firebaseUser.displayName || userData.displayName
+        });
+        return {
+          ...userData,
+          id: firebaseUser.uid,
+          photoURL: firebaseUser.photoURL || undefined,
+          displayName: firebaseUser.displayName || userData.displayName
+        };
       } else {
         const usersRef = collection(this.firestore, 'users');
         const q = query(usersRef, where('email', '==', firebaseUser.email));
