@@ -1,0 +1,20 @@
+// 幣別管理組件樣式
+
+:host {
+  display: block;
+}
+
+// 拖曳中的視覺效果
+::ng-deep .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+::ng-deep .cdk-drag-placeholder {
+  opacity: 0.4;
+  background: #f0f0f0;
+}
+
+// 拖曳中的項目
+::ng-deep .cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
