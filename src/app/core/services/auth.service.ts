@@ -82,6 +82,68 @@ export class AuthService {
     this.zone.run(() => this.router.navigate(['/login']));
   }
 
+  /**
+   * 申請刪除帳號（7 天後執行）
+   */
+  async requestDeleteAccount() {
+    const currentUser = this.currentUser();
+    if (!currentUser) {
+      throw new Error('未登入');
+    }
+
+    try {
+      const userRef = doc(this.firestore, 'users', currentUser.id);
+      await updateDoc(userRef, {
+        deleteRequestedAt: Timestamp.now(),
+        status: 'inactive',
+        updatedAt: Timestamp.now()
+      });
+
+      // 更新本地狀態
+      this.currentUser.set({
+        ...currentUser,
+        deleteRequestedAt: Timestamp.now(),
+        status: 'inactive'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('申請刪除帳號失敗:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 取消刪除帳號申請
+   */
+  async cancelDeleteRequest() {
+    const currentUser = this.currentUser();
+    if (!currentUser) {
+      throw new Error('未登入');
+    }
+
+    try {
+      const userRef = doc(this.firestore, 'users', currentUser.id);
+      await updateDoc(userRef, {
+        deleteRequestedAt: undefined,
+        status: 'active',
+        updatedAt: Timestamp.now()
+      });
+
+      // 更新本地狀態
+      this.currentUser.set({
+        ...currentUser,
+        deleteRequestedAt: undefined,
+        status: 'active'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('取消刪除申請失敗:', error);
+      throw error;
+    }
+  }
+
   private async syncUser(firebaseUser: FirebaseUser): Promise<User | null> {
     try {
       const userRef = doc(this.firestore, 'users', firebaseUser.uid);

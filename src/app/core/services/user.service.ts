@@ -51,4 +51,46 @@ export class UserService {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     return this.updateUser(userId, { status: newStatus });
   }
+
+  /**
+   * 申請刪除帳號（7 天後執行）
+   */
+  async requestDelete(userId: string) {
+    return this.updateUser(userId, {
+      deleteRequestedAt: Timestamp.now(),
+      status: 'inactive'
+    });
+  }
+
+  /**
+   * 取消刪除帳號申請
+   */
+  async cancelDeleteRequest(userId: string) {
+    return this.updateUser(userId, {
+      deleteRequestedAt: undefined,
+      status: 'active'
+    });
+  }
+
+  /**
+   * 檢查帳號是否已超過 7 天刪除窗口
+   */
+  isDeletionExpired(deleteRequestedAt?: Timestamp): boolean {
+    if (!deleteRequestedAt) return false;
+    const now = new Date();
+    const requested = deleteRequestedAt.toDate();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    return now.getTime() - requested.getTime() > sevenDaysMs;
+  }
+
+  /**
+   * 計算剩餘刪除天數
+   */
+  getRemainingDays(deleteRequestedAt?: Timestamp): number {
+    if (!deleteRequestedAt) return 0;
+    const now = new Date();
+    const requested = deleteRequestedAt.toDate();
+    const remainingMs = 7 * 24 * 60 * 60 * 1000 - (now.getTime() - requested.getTime());
+    return Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+  }
 }

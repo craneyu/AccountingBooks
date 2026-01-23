@@ -1,0 +1,95 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in-up">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <h2 class="text-xl font-bold text-gray-800">帳號設定</h2>
+      <button (click)="closeDialog()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <fa-icon [icon]="faTimes" class="text-lg"></fa-icon>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 space-y-6">
+      <!-- 用戶信息 -->
+      @if (currentUser()) {
+        <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <p class="text-sm text-gray-600 mb-2">已登入帳號</p>
+          <p class="font-semibold text-gray-800">{{ currentUser()!.email }}</p>
+          <p class="text-sm text-gray-600 mt-1">{{ currentUser()!.displayName }}</p>
+        </div>
+      }
+
+      <!-- 刪除申請狀態 -->
+      @if (currentUser()?.deleteRequestedAt) {
+        <div class="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
+          <div class="flex items-start gap-3">
+            <fa-icon [icon]="faWarning" class="text-red-500 text-lg flex-shrink-0 mt-0.5"></fa-icon>
+            <div>
+              <p class="font-semibold text-red-800 mb-1">帳號刪除申請已提交</p>
+              <p class="text-sm text-red-700 mb-2">
+                剩餘 <strong>{{ getRemainingDays() }}</strong> 天將永久刪除帳號
+              </p>
+              <p class="text-xs text-red-600">
+                申請時間：{{ currentUser()!.deleteRequestedAt!.toDate() | date:'yyyy/MM/dd HH:mm' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 取消刪除按鈕 -->
+        <button
+          (click)="cancelDelete()"
+          [disabled]="loading()"
+          class="w-full px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 font-semibold rounded-lg transition-colors border border-green-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          @if (loading()) {
+            <fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon>
+            <span>處理中...</span>
+          } @else {
+            <fa-icon [icon]="faCheck"></fa-icon>
+            <span>取消刪除申請</span>
+          }
+        </button>
+      } @else {
+        <!-- 危險區域 -->
+        <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+          <h3 class="font-semibold text-red-800 mb-2 flex items-center gap-2">
+            <fa-icon [icon]="faWarning" class="text-lg"></fa-icon>
+            危險區域
+          </h3>
+          <p class="text-sm text-red-700 mb-4">
+            申請刪除帳號後，您的帳號將在 7 天內永久刪除。此操作無法撤銷。
+          </p>
+
+          <button
+            (click)="requestDelete()"
+            [disabled]="loading()"
+            class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            @if (loading()) {
+              <fa-icon [icon]="faSpinner" class="animate-spin"></fa-icon>
+              <span>處理中...</span>
+            } @else {
+              <span>申請刪除帳號</span>
+            }
+          </button>
+        </div>
+
+        <!-- 提示 -->
+        <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <p class="text-sm text-blue-800">
+            <strong>💡 提示：</strong>
+            申請後有 7 天的取消期限。如果您改變主意，可以在這 7 天內取消刪除申請。
+          </p>
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 p-6">
+      <button
+        (click)="closeDialog()"
+        class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors">
+        關閉
+      </button>
+    </div>
+  </div>
+</div>
