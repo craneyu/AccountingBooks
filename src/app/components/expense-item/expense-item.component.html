@@ -1,19 +1,21 @@
 <div #itemContainer class="expense-item-wrapper">
-  <!-- 背景選單（手機版左滑時露出，平板版直接顯示） -->
-  <div class="action-menu">
-    <button class="action-btn view-btn" (click)="onViewReceipts()" *ngIf="expense.receiptImageUrls?.length || expense.receiptImageUrl" title="查看照片">
-      <fa-icon [icon]="faImages"></fa-icon>
-    </button>
-    <button class="action-btn edit-btn" (click)="onEdit()" title="編輯">
-      <fa-icon [icon]="faEdit"></fa-icon>
-    </button>
-    <button class="action-btn delete-btn" (click)="onDelete()" title="刪除">
-      <fa-icon [icon]="faTrash"></fa-icon>
-    </button>
-  </div>
+  <!-- 手機版滑動包裝容器 -->
+  <div class="slide-wrapper" [style.transform]="'translateX(' + actualSlideOffset() + 'px)'">
+    <!-- 背景選單（手機版左滑時露出，平板版直接顯示） -->
+    <div class="action-menu">
+      <button class="action-btn view-btn" (click)="onViewReceipts()" *ngIf="expense.receiptImageUrls?.length || expense.receiptImageUrl" title="查看照片">
+        <fa-icon [icon]="faImages"></fa-icon>
+      </button>
+      <button class="action-btn edit-btn" (click)="onEdit()" title="編輯">
+        <fa-icon [icon]="faEdit"></fa-icon>
+      </button>
+      <button class="action-btn delete-btn" (click)="onDelete()" title="刪除">
+        <fa-icon [icon]="faTrash"></fa-icon>
+      </button>
+    </div>
 
-  <!-- 內容部分（只在手機版允許滑動） -->
-  <div class="expense-content" [style.transform]="'translateX(' + actualSlideOffset() + 'px)'">
+    <!-- 內容部分（只在手機版允許滑動） -->
+    <div class="expense-content">
     <div class="soft-card flex items-center justify-between p-4 group hover:bg-white/40 transition-colors relative">
       <!-- 左側：分類圖示 + 文字資訊 -->
       <div class="flex items-center gap-4 flex-1">
@@ -83,5 +85,5 @@
       </div>
     </div>
   </div>
-
+</div>
 </div>
