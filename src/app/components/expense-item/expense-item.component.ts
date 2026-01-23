@@ -219,6 +219,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   private touchStartX = 0;
   private touchStartY = 0;
   private isTouching = false;
+  touchDebugInfo = signal('');
 
   /**
    * 初始化原生觸摸事件（備用）
@@ -232,12 +233,11 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // 在 capture 階段監聽，確保先於其他事件處理器
     element.addEventListener('touchstart', (e: TouchEvent) => {
-      console.log('[TouchStart] touches:', e.touches.length);
       if (e.touches.length === 0) return;
       this.isTouching = true;
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
-      console.log('[TouchStart] X:', this.touchStartX, 'Y:', this.touchStartY);
+      this.touchDebugInfo.set(`Start: ${Math.round(this.touchStartX)}, ${Math.round(this.touchStartY)}`);
     }, true);
 
     element.addEventListener('touchmove', (e: TouchEvent) => {
@@ -248,7 +248,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
       const deltaX = touchX - this.touchStartX;
       const deltaY = touchY - this.touchStartY;
 
-      console.log('[TouchMove] deltaX:', deltaX, 'deltaY:', deltaY);
+      this.touchDebugInfo.set(`ΔX: ${Math.round(deltaX)} ΔY: ${Math.round(deltaY)}`);
 
       // 檢查是否為水平移動
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
@@ -263,8 +263,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }, true);
 
-    element.addEventListener('touchend', (e: TouchEvent) => {
-      console.log('[TouchEnd] fired');
+    element.addEventListener('touchend', () => {
       if (!this.isTouching) return;
 
       this.isTouching = false;
@@ -277,6 +276,8 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
         this.isSliding.set(false);
         this.slideOffset.set(0);
       }
+
+      this.touchDebugInfo.set('End');
     }, true);
 
     console.log('[InitTouchEvents] 原生觸摸事件初始化成功，使用 capture 模式');
