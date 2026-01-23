@@ -23,14 +23,17 @@
         <label class="block text-sm font-medium text-text-light mb-1">日期</label>
         <input type="date" formControlName="expenseDate" class="soft-input" [class.border-danger]="isDateInvalid()">
 
-        <!-- Date Validation Errors -->
-        <div class="mt-2 text-sm text-danger font-medium" *ngIf="isDateInvalid()">
-          @if (form.get('expenseDate')?.hasError('required')) {
+        <!-- Date Validation Errors - Always show if there's an error -->
+        @if (form.get('expenseDate')?.hasError('required')) {
+          <div class="mt-2 text-sm text-danger font-medium">
             <p>日期為必填欄位</p>
-          } @else if (form.get('expenseDate')?.hasError('dateOutOfRange')) {
+          </div>
+        }
+        @if (form.get('expenseDate')?.hasError('dateOutOfRange')) {
+          <div class="mt-2 text-sm text-danger font-medium">
             <p>支出日期必須在 {{ dateRangeError()?.start }} 至 {{ dateRangeError()?.end }} 之間</p>
-          }
-        </div>
+          </div>
+        }
       </div>
 
       <!-- Amount & Currency -->

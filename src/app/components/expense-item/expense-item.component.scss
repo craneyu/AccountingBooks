@@ -9,8 +9,9 @@
 
   // 手機版和平板版設置（寬度 < 1025px）
   @media (max-width: 1024px) {
-    touch-action: pan-y;
+    touch-action: manipulation;
     -webkit-touch-callout: none;
+    -webkit-user-select: none;
   }
 
   // 寬屏桌面版恢復正常（寬度 >= 1025px）

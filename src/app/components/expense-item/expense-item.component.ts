@@ -127,10 +127,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const element = this.itemContainer.nativeElement;
-    console.log('[InitializeHammer] element:', element);
-
     const HammerLib = (window as any).Hammer;
-    console.log('[InitializeHammer] HammerLib:', HammerLib ? '已加載' : '未加載');
 
     if (!HammerLib) {
       console.warn('HammerJS 未載入');
@@ -138,22 +135,28 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     try {
-      // 建立 Hammer 管理器，禁用預設的觸摸動作
-      const manager = new HammerLib.Manager(element, {
-        recognizers: [
-          [HammerLib.Pan, {
-            direction: HammerLib.DIRECTION_HORIZONTAL,
-            threshold: 5,
-            pointers: 1
-          }],
-          [HammerLib.Swipe, {
-            direction: HammerLib.DIRECTION_HORIZONTAL,
-            threshold: 10,
-            velocity: 0.3,
-            pointers: 1
-          }],
-        ]
+      // 建立 Hammer 管理器
+      const manager = new HammerLib.Manager(element);
+
+      // 清除預設識別器
+      manager.recognizers = [];
+
+      // 添加 Pan 識別器
+      const panRecognizer = new HammerLib.Pan({
+        direction: HammerLib.DIRECTION_HORIZONTAL,
+        threshold: 5,
+        pointers: 1
       });
+      manager.add(panRecognizer);
+
+      // 添加 Swipe 識別器
+      const swipeRecognizer = new HammerLib.Swipe({
+        direction: HammerLib.DIRECTION_HORIZONTAL,
+        threshold: 10,
+        velocity: 0.3,
+        pointers: 1
+      });
+      manager.add(swipeRecognizer);
 
       this.hammer = manager;
 
@@ -163,30 +166,26 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // 監聽左滑事件
       manager.on('swipeleft', (e: any) => {
-        e.preventDefault();
+        if (e.preventDefault) e.preventDefault();
         this.isSliding.set(true);
         this.slideOffset.set(-MENU_WIDTH);
       });
 
       // 監聽右滑事件（關閉選單）
       manager.on('swiperight', (e: any) => {
-        e.preventDefault();
+        if (e.preventDefault) e.preventDefault();
         this.isSliding.set(false);
         this.slideOffset.set(0);
       });
 
       // 監聽 pan 事件（拖動中的即時反饋）
-      manager.on('panstart', () => {
-        console.log('Pan start');
-      });
-
       manager.on('pan', (e: any) => {
         // 檢查是否為水平移動
         if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
           return; // 垂直移動，由瀏覽器處理頁面滾動
         }
 
-        e.preventDefault();
+        if (e.preventDefault) e.preventDefault();
 
         // 拖動進行中
         if (!e.isFinal) {
@@ -209,7 +208,7 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
-      console.log('HammerJS 初始化成功');
+      console.log('HammerJS 初始化成功 - 元素:', element.className);
     } catch (err) {
       console.error('HammerJS 初始化失敗:', err);
     }
