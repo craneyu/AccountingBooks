@@ -5,7 +5,7 @@ import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../core/models/user.model';
 import { Observable } from 'rxjs';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faArrowLeft, faUserShield, faUser, faUserSlash, faCheckCircle, faTimesCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUserShield, faUser, faUserSlash, faCheckCircle, faTimesCircle, faTrash, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { UserDialogComponent } from '../../../components/user-dialog/user-dialog';
 import { AuthService } from '../../../core/services/auth.service';
 import Swal from 'sweetalert2';
@@ -24,6 +24,7 @@ export class UserManagementComponent {
   users$: Observable<User[]> = this.userService.getUsers();
   currentUser = this.authService.currentUser;
   showDialog = false;
+  syncLoading = false;
 
   faArrowLeft = faArrowLeft;
   faUserShield = faUserShield;
@@ -32,6 +33,7 @@ export class UserManagementComponent {
   faCheckCircle = faCheckCircle;
   faTimesCircle = faTimesCircle;
   faTrash = faTrash;
+  faSpinner = faSpinner;
 
   openAdd() {
     this.showDialog = true;
@@ -126,6 +128,36 @@ export class UserManagementComponent {
         });
       } catch (error) {
         Swal.fire('錯誤', '操作失敗', 'error');
+      }
+    }
+  }
+
+  async syncUsersPhotoURL() {
+    const result = await Swal.fire({
+      title: '重新同步所有使用者頭像',
+      text: '這將從 Firebase Auth 更新所有使用者的頭像資訊，可能需要數秒。',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: '確定',
+      cancelButtonText: '取消'
+    });
+
+    if (result.isConfirmed) {
+      this.syncLoading = true;
+      try {
+        const response = await this.userService.syncAllUsersPhotoURL();
+        Swal.fire({
+          icon: 'success',
+          title: '同步完成',
+          html: `<p>${response.message}</p><p class="text-sm text-gray-600">共 ${response.total} 個使用者，更新 ${response.updated} 個</p>`,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      } catch (error: any) {
+        console.error('同步失敗:', error);
+        Swal.fire('錯誤', error.message || '同步失敗', 'error');
+      } finally {
+        this.syncLoading = false;
       }
     }
   }
