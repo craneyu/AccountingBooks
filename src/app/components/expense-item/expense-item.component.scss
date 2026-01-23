@@ -25,12 +25,11 @@
     transition: transform 0.2s ease-out;
     position: relative;
 
-    // 手機版：flex 布局，action-menu 排列在右側（通過 row-reverse）
+    // 手機版：垂直佈局，按鈕在下方
     @media (max-width: 599px) {
       display: flex;
-      flex-direction: row-reverse; // 反轉順序：content 在左，action-menu 在右
-      align-items: stretch; // 讓子元素等高
-      width: calc(100% + 140px);
+      flex-direction: column; // 垂直：content 在上，action-menu 在下
+      width: 100%;
     }
 
     // 平板版：回到正常布局，action-menu 絕對定位
@@ -51,9 +50,13 @@
     flex-shrink: 0;
     position: relative;
 
-    // 手機版（寬度 < 600px）：通過 flex 在 slide-wrapper 內排列
+    // 手機版（寬度 < 600px）：按鈕橫向排列在下方
     @media (max-width: 599px) {
-      // align-items: stretch 會自動拉伸高度
+      flex-direction: row; // 橫向排列
+      width: 100%;
+      min-width: unset;
+      height: auto;
+      position: relative;
     }
 
     // 平板版（寬度 600px - 1024px）：直接顯示按鈕（絕對定位）
@@ -82,6 +85,12 @@
       font-size: 1.25rem;
       transition: background-color 0.2s ease;
       color: white;
+
+      // 手機版：固定高度
+      @media (max-width: 599px) {
+        height: 44px;
+        min-height: 44px;
+      }
 
       &.view-btn {
         background-color: #3b82f6; // blue
