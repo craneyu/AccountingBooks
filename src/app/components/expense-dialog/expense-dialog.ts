@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject, OnInit, OnChanges, SimpleChanges, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ExpenseService } from '../../core/services/expense.service';
 import { ExchangeRateService } from '../../core/services/exchange-rate.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -29,6 +29,8 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   @Input() tripId!: string;
   @Input() tripCurrency: string = 'TWD';
   @Input() expense: Expense | null = null;
+  @Input() tripStartDate?: Timestamp;
+  @Input() tripEndDate?: Timestamp;
   @Output() close = new EventEmitter<void>();
 
   private fb = inject(FormBuilder);
@@ -77,15 +79,21 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
 
   ngOnInit() {
     const today = new Date().toISOString().substring(0, 10);
-    
+
     // Ensure tripCurrency is in list
     if (this.tripCurrency && !this.currencies.includes(this.tripCurrency)) {
         this.currencies = [...this.currencies, this.tripCurrency];
     }
 
+    // 準備日期驗證器
+    const dateValidators: ValidatorFn[] = [Validators.required];
+    if (this.tripStartDate && this.tripEndDate) {
+      dateValidators.push(this.tripDateRangeValidator());
+    }
+
     this.form = this.fb.group({
       item: [this.expense?.item || '', Validators.required],
-      expenseDate: [this.expense?.expenseDate ? this.expense.expenseDate.toDate().toISOString().substring(0, 10) : today, Validators.required],
+      expenseDate: [this.expense?.expenseDate ? this.expense.expenseDate.toDate().toISOString().substring(0, 10) : today, dateValidators],
       amount: [this.expense?.amount || null, [Validators.required, Validators.min(0)]],
       currency: [this.expense?.currency || this.tripCurrency, Validators.required],
       exchangeRate: [this.expense?.exchangeRate || 1, Validators.required],
@@ -158,6 +166,48 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       const twd = Math.round(amount * rate);
       this.form.patchValue({ amountInTWD: twd }, { emitEvent: false });
     }
+  }
+
+  /**
+   * 驗證支出日期是否在旅程日期範圍內
+   */
+  private tripDateRangeValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const dateStr = control.value;
+      if (!dateStr) {
+        return null; // 讓 required validator 處理
+      }
+
+      if (!this.tripStartDate || !this.tripEndDate) {
+        return null; // 沒有旅程日期範圍
+      }
+
+      try {
+        const expenseDate = new Date(dateStr);
+        const startDate = this.tripStartDate.toDate();
+        const endDate = this.tripEndDate.toDate();
+
+        // 設置時間為開始和結束的午夜，以便正確比較日期
+        expenseDate.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+
+        // 檢查日期是否在範圍內
+        if (expenseDate < startDate || expenseDate > endDate) {
+          return {
+            dateOutOfRange: {
+              value: dateStr,
+              start: this.tripStartDate.toDate().toISOString().split('T')[0],
+              end: this.tripEndDate.toDate().toISOString().split('T')[0]
+            }
+          };
+        }
+
+        return null;
+      } catch {
+        return null; // 日期格式無效，讓其他驗證器處理
+      }
+    };
   }
 
   onFilesSelected(event: any) {

@@ -95,10 +95,12 @@ export class TripMembersDialogComponent implements OnInit {
     }
   }
 
-  async updateRole(member: TripMember, newRole: string): Promise<void> {
+  async updateRole(member: TripMember, roleValue: string): Promise<void> {
+    const newRole = roleValue as 'owner' | 'editor' | 'viewer';
+
     try {
       await this.membersService.updateMember(this.tripId, member.userId, {
-        role: newRole as 'owner' | 'editor' | 'viewer'
+        role: newRole
       });
 
       await Swal.fire('成功', '成員角色已更新', 'success');
