@@ -94,8 +94,11 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     // 手機版和平板版使用 HammerJS（寬度 < 1025px）
     // 桌面版（寬度 >= 1025px）使用 hover 按鈕
-    console.log('[ExpenseItem] Window width:', window.innerWidth, 'Needs HammerJS:', window.innerWidth < 1025);
-    if (window.innerWidth < 1025) {
+    const windowWidth = window.innerWidth;
+    const needsHammer = windowWidth < 1025;
+    console.log('[ExpenseItem] Window width:', windowWidth, 'Needs HammerJS:', needsHammer);
+
+    if (needsHammer) {
       // 延遲初始化以確保 DOM 完全載入
       setTimeout(() => {
         this.initializeHammer();
@@ -118,10 +121,16 @@ export class ExpenseItemComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initializeHammer() {
-    if (!this.itemContainer) return;
+    if (!this.itemContainer) {
+      console.warn('[InitializeHammer] itemContainer is null');
+      return;
+    }
 
     const element = this.itemContainer.nativeElement;
+    console.log('[InitializeHammer] element:', element);
+
     const HammerLib = (window as any).Hammer;
+    console.log('[InitializeHammer] HammerLib:', HammerLib ? '已加載' : '未加載');
 
     if (!HammerLib) {
       console.warn('HammerJS 未載入');
