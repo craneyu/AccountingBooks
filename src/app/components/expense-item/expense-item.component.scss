@@ -1,8 +1,23 @@
 .expense-item-wrapper {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   border-radius: 12px;
   margin-bottom: 1rem;
+  user-select: none;
+  -webkit-user-select: none;
+
+  // 手機版和平板版設置（寬度 < 1025px）
+  @media (max-width: 1024px) {
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+  }
+
+  // 寬屏桌面版恢復正常（寬度 >= 1025px）
+  @media (min-width: 1025px) {
+    touch-action: auto;
+    -webkit-touch-callout: default;
+  }
 
   // 背景選單
   .action-menu {
@@ -10,13 +25,20 @@
     top: 0;
     right: 0;
     height: 100%;
-    width: 120px;
+    width: 140px;
     display: flex;
     gap: 0;
     z-index: 1;
+    flex-shrink: 0;
+
+    // 只在寬屏桌面版隱藏手機操作菜單（寬度 >= 1025px）
+    @media (min-width: 1025px) {
+      display: none;
+    }
 
     .action-btn {
-      flex: 1;
+      min-width: 0;
+      flex: 1 1 auto;
       border: none;
       cursor: pointer;
       display: flex;
@@ -47,7 +69,7 @@
         }
       }
 
-      @media (max-width: 768px) {
+      @media (max-width: 1024px) {
         font-size: 1rem;
       }
     }
@@ -59,6 +81,17 @@
     z-index: 2;
     transition: transform 0.2s ease-out;
     background-color: inherit;
+    pointer-events: auto;
+
+    // 手機版和平板版：允許 HammerJS 處理手勢（寬度 < 1025px）
+    @media (max-width: 1024px) {
+      touch-action: manipulation;
+    }
+
+    // 寬屏桌面版：恢復正常（寬度 >= 1025px）
+    @media (min-width: 1025px) {
+      touch-action: auto;
+    }
 
     // 觸控時禁用 hover 效果
     @media (hover: none) {
@@ -66,8 +99,10 @@
     }
   }
 
-  // 手機版提示文字
+  // 手機版和平板版提示文字
   .mobile-hint {
+    display: none;  // 預設隱藏
+
     position: absolute;
     bottom: 4px;
     right: 8px;
@@ -78,8 +113,8 @@
     opacity: 0;
     animation: fadeOut 0.5s ease-in 1.5s forwards;
 
-    @media (min-width: 769px) {
-      display: none;
+    @media (max-width: 1024px) {
+      display: block;  // 手機版和平板版才顯示
     }
   }
 }
@@ -94,11 +129,11 @@
   }
 }
 
-// 響應式調整
+// 響應式調整（小屏幕手機優化）
 @media (max-width: 640px) {
   .expense-item-wrapper {
     .action-menu {
-      width: 100px; // 手機版選單稍窄
+      width: 130px; // 小屏幕手機版選單寬度調整
     }
 
     .expense-content {
@@ -108,7 +143,8 @@
 }
 
 // iPad 優化（44x44pt 觸控區域）
-@media (min-width: 768px) and (hover: none) {
+// 在平板上使用左滑選單，所以需要更大的觸控區域
+@media (max-width: 1024px) and (hover: none) {
   .expense-item-wrapper {
     .action-btn {
       min-height: 44px;

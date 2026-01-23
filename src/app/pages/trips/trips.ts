@@ -9,6 +9,8 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faMapMarkedAlt, faCalendarAlt, faSuitcaseRolling, faPlus, faEdit, faTrash, faUsers, faTools } from '@fortawesome/free-solid-svg-icons';
 import { TripDialogComponent } from '../../components/trip-dialog/trip-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
+import { switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -23,7 +25,30 @@ export class TripsComponent {
   membersService = inject(TripMembersService);
   authService = inject(AuthService);
 
-  trips$ = this.tripService.getActiveTrips();
+  // 取得經過授權檢查的行程列表
+  trips$ = this.tripService.getActiveTrips().pipe(
+    switchMap(trips => {
+      const currentUser = this.authService.currentUser();
+      if (!trips || !currentUser) {
+        return of([]);
+      }
+
+      // 對每個行程檢查成員資格
+      return Promise.all(
+        trips.map(async trip => {
+          if (!trip.id) return null;
+          try {
+            const isMember = await this.membersService.checkMembership(trip.id, currentUser.id);
+            return isMember ? trip : null;
+          } catch (error) {
+            console.error(`檢查行程 ${trip.id} 的成員資格失敗:`, error);
+            return null; // 無法驗證時不顯示
+          }
+        })
+      ).then(results => results.filter((trip): trip is Trip => trip !== null));
+    })
+  );
+
   isAdmin = this.authService.isAdmin;
 
   showTripDialog = signal(false);

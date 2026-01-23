@@ -418,7 +418,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
   }
 
   addCategory() {
-    const categoryName = this.newCategoryText.trim();
+    const categoryName = (this.newCategoryText || '').trim();
     if (!categoryName) {
       alert('請輸入類別名稱');
       return;

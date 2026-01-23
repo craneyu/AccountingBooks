@@ -152,6 +152,8 @@
     <app-expense-dialog
       [tripId]="tripId"
       [tripCurrency]="(trip$ | async)?.currency || 'TWD'"
+      [tripStartDate]="(trip$ | async)?.startDate"
+      [tripEndDate]="(trip$ | async)?.endDate"
       [expense]="selectedExpense"
       (close)="closeDialog()">
     </app-expense-dialog>

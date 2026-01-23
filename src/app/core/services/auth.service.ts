@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
 import { Auth, GoogleAuthProvider, signInWithPopup, signOut, user, User as FirebaseUser } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, Timestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, Timestamp, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Router } from '@angular/router';
 import { User } from '../models/user.model';
 import { of, from, BehaviorSubject } from 'rxjs';
@@ -184,11 +184,120 @@ export class AuthService {
           lastLoginAt: now
         };
         await setDoc(userRef, newUser);
+
+        // 同步成員記錄：如果有按 email 建立的成員記錄，更新為使用真實 UID
+        await this.migrateMembersByEmail(firebaseUser.uid, firebaseUser.email || '');
+
+        // 修復舊行程缺失的 owner 成員記錄
+        await this.fixMissingOwnerMembers(firebaseUser.uid, firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User', firebaseUser.email || '');
+
         return newUser;
       }
     } catch (e) {
       console.error('SyncUser error:', e);
       return null;
+    }
+  }
+
+  /**
+   * 遷移按 email 建立的成員記錄到正確的 UID
+   * 當使用者首次登入時，檢查是否有使用衍生 ID 的成員記錄，並更新為正確的 UID
+   */
+  private async migrateMembersByEmail(uid: string, email: string): Promise<void> {
+    try {
+      // 查找所有 trips 中按 email 衍生 ID 建立的成員
+      const derivedId = email.replace('@', '_').replace('.', '_');
+
+      const tripsRef = collection(this.firestore, 'trips');
+      const tripsSnap = await getDocs(tripsRef);
+
+      for (const tripDoc of tripsSnap.docs) {
+        // 檢查是否存在衍生 ID 的成員
+        const derivedMemberRef = doc(this.firestore, `trips/${tripDoc.id}/members`, derivedId);
+        const derivedMemberSnap = await getDoc(derivedMemberRef);
+
+        if (derivedMemberSnap.exists()) {
+          const memberData = derivedMemberSnap.data();
+
+          // 檢查新 UID 是否已存在
+          const newMemberRef = doc(this.firestore, `trips/${tripDoc.id}/members`, uid);
+          const newMemberSnap = await getDoc(newMemberRef);
+
+          if (!newMemberSnap.exists()) {
+            // 使用 batch 以確保原子性
+            const batch = writeBatch(this.firestore);
+
+            // 建立新的正確 UID 成員記錄
+            batch.set(newMemberRef, {
+              ...memberData,
+              userId: uid,
+              updatedAt: Timestamp.now()
+            });
+
+            // 刪除舊的衍生 ID 成員記錄
+            batch.delete(derivedMemberRef);
+
+            await batch.commit();
+            console.log(`✓ 遷移成員記錄: ${email} 在 trip ${tripDoc.id} 從 ${derivedId} 到 ${uid}`);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('遷移成員記錄失敗:', e);
+      // 不中斷登入流程
+    }
+  }
+
+  /**
+   * 修復舊行程缺失的 owner 成員記錄
+   * 檢查用戶建立的所有行程，如果缺少 owner 成員記錄，自動建立
+   * 用於處理在權限系統實施之前建立的舊行程
+   */
+  private async fixMissingOwnerMembers(uid: string, displayName: string, email: string): Promise<void> {
+    try {
+      const tripsRef = collection(this.firestore, 'trips');
+      const q = query(tripsRef, where('createdBy', '==', uid));
+      const tripsSnap = await getDocs(q);
+
+      for (const tripDoc of tripsSnap.docs) {
+        const tripId = tripDoc.id;
+
+        // 檢查該行程是否已有該用戶的 member 記錄
+        const memberRef = doc(this.firestore, `trips/${tripId}/members`, uid);
+        const memberSnap = await getDoc(memberRef);
+
+        if (!memberSnap.exists()) {
+          // 缺少 owner 成員記錄，自動建立
+          const batch = writeBatch(this.firestore);
+
+          // 新增 owner 成員記錄
+          batch.set(memberRef, {
+            userId: uid,
+            role: 'owner',
+            displayName: displayName,
+            email: email,
+            joinedAt: Timestamp.now(),
+            addedBy: uid,
+            updatedAt: Timestamp.now()
+          });
+
+          // 更新 trip 的 ownerId 和 memberCount（如果缺少）
+          const tripData = tripDoc.data() as any;
+          if (!tripData['ownerId'] || !tripData['memberCount']) {
+            batch.update(tripDoc.ref, {
+              ownerId: uid,
+              memberCount: 1,
+              updatedAt: Timestamp.now()
+            });
+          }
+
+          await batch.commit();
+          console.log(`✓ 修復舊行程: ${tripId} 新增 owner 成員記錄`);
+        }
+      }
+    } catch (e) {
+      console.error('修復舊行程失敗:', e);
+      // 不中斷登入流程
     }
   }
 }
