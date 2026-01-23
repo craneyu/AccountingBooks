@@ -32,9 +32,9 @@
     z-index: 10;
     flex-shrink: 0;
 
-    // 手機版（寬度 < 600px）：隱藏選單
+    // 手機版（寬度 < 600px）：通過 overflow: hidden 隱藏，等待左滑露出
     @media (max-width: 599px) {
-      display: none;
+      // 保持 display: flex，允許 HammerJS 觸發滑動露出
     }
 
     // 平板版（寬度 600px - 1024px）：直接顯示按鈕
