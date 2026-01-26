@@ -1,0 +1,479 @@
+================================================================================
+ACCOUNTINGBOOKS - ARCHITECTURE DIAGRAM & DATA FLOW
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER INTERFACE LAYER                              │
+│                                                                              │
+│  ┌─────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │
+│  │   Login Page        │  │   Trips Page     │  │   Admin Dashboard    │  │
+│  │  - Google OAuth     │  │  - Trip cards    │  │  - User mgmt         │  │
+│  │  - Session mgmt     │  │  - Create/edit   │  │  - Trip mgmt         │  │
+│  └─────────────────────┘  └──────────────────┘  └──────────────────────┘  │
+│                                                                              │
+│  ┌─────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐  │
+│  │  Expenses Page      │  │  Statistics Page │  │  Settings Dialog     │  │
+│  │  - List/filter      │  │  - Pie charts    │  │  - User profile      │  │
+│  │  - Receipt upload   │  │  - Line graphs   │  │  - Preferences       │  │
+│  │  - Delete/edit      │  │  - Analytics     │  │  - Account delete    │  │
+│  └─────────────────────┘  └──────────────────┘  └──────────────────────┘  │
+│                                                                              │
+│  Angular 21 | TypeScript 5.9 | Standalone Components | RxJS 7.8            │
+│  Tailwind CSS 3.4 | Soft UI Evolution Design                               │
+│  Swiper.js | SweetAlert2 | Chart.js | Font Awesome | Hammer.js             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     ▲
+                                     │
+                            Firebase SDK Bridge
+                                     │
+                ┌────────────────────┼────────────────────┐
+                │                    │                    │
+                ▼                    ▼                    ▼
+        ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+        │  Cloud Firestore │ │  Cloud Storage   │ │    Firebase Auth │
+        │   (Real-time DB) │ │  (File uploads)  │ │  (Google OAuth)  │
+        │                  │ │                  │ │                  │
+        │ - Collections    │ │ - /receipts/     │ │ - Token mgmt     │
+        │ - Real-time      │ │ - /trip-covers/  │ │ - User creation  │
+        │   listeners      │ │ - /avatars/      │ │ - Session mgmt   │
+        │ - Transactions   │ │                  │ │                  │
+        │ - Security rules │ │ - 10MB limit     │ │ - Auto refresh   │
+        │                  │ │ - Image formats  │ │                  │
+        └──────────────────┘ └──────────────────┘ └──────────────────┘
+                 ▲                    ▲                    ▲
+                 │                    │                    │
+        ┌────────┴────────────────────┴────────────────────┴──────────┐
+        │                                                              │
+        │                    Firebase & Google Cloud                   │
+        │                                                              │
+        │  ┌───────────────────────────────────────────────────────┐  │
+        │  │           Cloud Functions (Node.js 20)                │  │
+        │  │                                                       │  │
+        │  │  Firestore Triggers:                                  │  │
+        │  │    • onExpenseCreated     → Notify members            │  │
+        │  │    • onExpenseUpdated     → Update notifications      │  │
+        │  │    • onExpenseDeleted     → Delete notifications      │  │
+        │  │    • onMemberAdded        → Welcome notification      │  │
+        │  │    • onMemberRemoved      → Removal notification      │  │
+        │  │                                                       │  │
+        │  │  Scheduled (Pub/Sub):                                 │  │
+        │  │    • cleanupDeletedAccounts (Daily 00:00 UTC)         │  │
+        │  │    • dailySyncUsersPhotoURL (Daily 01:00 UTC)         │  │
+        │  │                                                       │  │
+        │  │  Callable:                                            │  │
+        │  │    • syncAllUsersPhotoURL (Admin manual trigger)      │  │
+        │  │                                                       │  │
+        │  │  Health:                                              │  │
+        │  │    • healthCheck (Monitoring endpoint)                │  │
+        │  └───────────────────────────────────────────────────────┘  │
+        │                                                              │
+        └──────────────────────────────────────────────────────────────┘
+                 ▲                    ▲
+                 │                    │
+                 │          Firebase Hosting
+                 │          (Static SPA)
+                 │
+        ┌────────┴────────────────────────────────────────┐
+        │         Browser Storage & Caching               │
+        │                                                  │
+        │  • localStorage (Session persistence)            │
+        │  • Exchange rate cache                           │
+        │  • RxJS Subject state management                 │
+        └────────┬────────────────────────────────────────┘
+
+================================================================================
+FIRESTORE DATA STRUCTURE
+================================================================================
+
+Database Structure:
+
+users/
+├── {userId}
+│   ├── email: string
+│   ├── displayName: string
+│   ├── photoURL: string
+│   ├── status: 'active' | 'inactive'
+│   ├── isAdmin: boolean
+│   ├── createdAt: Timestamp
+│   └── updatedAt: Timestamp
+
+trips/
+├── {tripId}
+│   ├── name: string
+│   ├── startDate: Timestamp
+│   ├── endDate: Timestamp
+│   ├── status: 'active' | 'inactive'
+│   ├── createdBy: string (userId)
+│   ├── ownerId: string
+│   ├── currency: string (default)
+│   ├── coverImage: string (path)
+│   ├── memberCount: number
+│   │
+│   ├── members/ (subcollection)
+│   │   └── {memberId}
+│   │       ├── userId: string
+│   │       ├── displayName: string
+│   │       ├── role: 'owner' | 'editor' | 'viewer'
+│   │       ├── addedAt: Timestamp
+│   │       └── addedBy: string
+│   │
+│   └── expenses/ (subcollection)
+│       └── {expenseId}
+│           ├── item: string
+│           ├── amount: number
+│           ├── currency: string
+│           ├── category: string
+│           ├── paymentMethod: string
+│           ├── submittedBy: string (userId)
+│           ├── submittedByName: string
+│           ├── receiptImages: string[]
+│           └── createdAt: Timestamp
+
+categories/
+├── {categoryId}
+│   ├── name: string
+│   ├── icon: string (Font Awesome)
+│   ├── color: string (hex)
+│   └── isDefault: boolean
+
+paymentMethods/
+├── {methodId}
+│   ├── name: string
+│   ├── icon: string
+│   └── isDefault: boolean
+
+currencies/
+├── {currencyId}
+│   ├── code: string (e.g., 'TWD', 'USD')
+│   ├── name: string
+│   ├── symbol: string
+│   ├── exchangeRate: number
+│   └── lastUpdated: Timestamp
+
+exchangeRates/
+├── {rateId}
+│   ├── from: string
+│   ├── to: string
+│   ├── rate: number
+│   └── timestamp: Timestamp
+
+notifications/
+├── {notificationId}
+│   ├── userId: string (recipient)
+│   ├── type: string (event type)
+│   ├── tripId: string
+│   ├── message: string
+│   ├── isRead: boolean
+│   └── createdAt: Timestamp
+
+settings/
+├── {settingId}
+│   ├── key: string
+│   ├── value: any
+│   └── lastUpdated: Timestamp
+
+================================================================================
+SERVICE DEPENDENCY GRAPH
+================================================================================
+
+                        ┌─────────────────────┐
+                        │   AuthService       │
+                        │  (Root dependency)  │
+                        └────────────┬────────┘
+                                     │
+                ┌────────────────────┼────────────────────┐
+                │                    │                    │
+                ▼                    ▼                    ▼
+        ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+        │  TripService     │ │  UserService     │ │ NotificationServ │
+        └────────┬─────────┘ └──────────────────┘ └──────────────────┘
+                 │
+        ┌────────┴────────────────────┐
+        │                             │
+        ▼                             ▼
+┌──────────────────┐        ┌──────────────────────┐
+│ ExpenseService   │        │ TripMembersService   │
+└────────┬─────────┘        └──────────────────────┘
+         │
+    ┌────┴────────────┐
+    │                 │
+    ▼                 ▼
+┌──────────────┐  ┌──────────────────────┐
+│StatisticsServ   │ ExportService        │
+│ce           │  │ (CSV/ZIP export)    │
+└──────────────┘  └──────────────────────┘
+
+Other Services:
+  - CategoryService          → Expense categories
+  - PaymentMethodService     → Payment methods
+  - CurrencyService          → Currency management
+  - ExchangeRateService      → Currency conversion
+  - SystemSettingsService    → Global settings
+  - SearchFilterService      → Advanced search
+
+================================================================================
+REQUEST/RESPONSE FLOW - ADDING AN EXPENSE
+================================================================================
+
+User Action:
+    │
+    ▼
+┌─────────────────────────────┐
+│  User fills expense form    │
+│  - Amount, currency, item   │
+│  - Category, payment method │
+│  - Upload receipt image(s)  │
+└────────────┬────────────────┘
+             │
+             ▼
+┌──────────────────────────────┐
+│  Validate form (Angular)     │
+└────────────┬─────────────────┘
+             │
+             ▼
+┌──────────────────────────────┐
+│  ExpenseService.addExpense() │
+└────────────┬─────────────────┘
+             │
+    ┌────────┴────────────┐
+    │                     │
+    ▼                     ▼
+┌──────────────┐  ┌─────────────────────┐
+│ Upload image │  │ Create Firestore doc│
+│ to Storage   │  │ /trips/{id}/expenses│
+└──────────────┘  └────────┬────────────┘
+    │                      │
+    └──────────┬───────────┘
+               │
+               ▼
+        ┌──────────────────┐
+        │ Cloud Function   │
+        │ onExpenseCreated │
+        │ triggers         │
+        └────────┬─────────┘
+                 │
+      ┌──────────┴──────────┐
+      │                     │
+      ▼                     ▼
+┌──────────────────┐  ┌──────────────────────┐
+│ Fetch trip data  │  │ Create notifications │
+│ Fetch members    │  │ for each member      │
+└──────────────────┘  │ (except submitter)   │
+      │               └──────────┬───────────┘
+      │                          │
+      └──────────┬───────────────┘
+                 │
+                 ▼
+        ┌──────────────────────────┐
+        │ All members receive       │
+        │ real-time notification   │
+        │ in NotificationService   │
+        │ observable               │
+        └──────────────────────────┘
+
+================================================================================
+ROLE-BASED ACCESS CONTROL (RBAC)
+================================================================================
+
+Trip Roles:
+
+┌─────────────────────────────────────────────────────────────────┐
+│                           OWNER                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ • Create/edit/delete expenses                              │ │
+│  │ • Add/remove members                                       │ │
+│  │ • Change member roles                                      │ │
+│  │ • Delete trip                                              │ │
+│  │ • Upload trip cover image                                  │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                          EDITOR                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ • Create/edit/delete own expenses                          │ │
+│  │ • Edit all expenses                                        │ │
+│  │ • Upload receipt images                                    │ │
+│  │ • View all trip data                                       │ │
+│  │ • Cannot: manage members, delete trip, upload cover       │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                         VIEWER                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ • View trip data (read-only)                               │ │
+│  │ • View statistics & reports                                │ │
+│  │ • View member profiles                                     │ │
+│  │ • Cannot: create/edit/delete expenses, manage members     │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+Admin Status (Global):
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     SYSTEM ADMIN                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ • Access ALL trips and expenses                            │ │
+│  │ • Manage users (activate/deactivate)                       │ │
+│  │ • Manage categories                                        │ │
+│  │ • Manage currencies & exchange rates                       │ │
+│  │ • Manage payment methods                                   │ │
+│  │ • View system-wide statistics                              │ │
+│  │ • Sync user avatars                                        │ │
+│  │ • Delete accounts (after 7-day grace period)              │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+================================================================================
+DEPLOYMENT ARCHITECTURE
+================================================================================
+
+┌────────────────────────────────────────────────────────────────────┐
+│                      FIREBASE PROJECT                              │
+│                  (accountingbooks-9fa26)                          │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │          FIREBASE HOSTING (SPA Distribution)                 │ │
+│  │                                                              │ │
+│  │  CDN Edge Locations (Global)                                │ │
+│  │  └─ dist/accounting-books/browser/                          │ │
+│  │     ├─ index.html (SPA entry point)                         │ │
+│  │     ├─ main.{hash}.js (Angular bundle)                      │ │
+│  │     ├─ runtime.{hash}.js (Runtime)                          │ │
+│  │     └─ styles.{hash}.css (Global styles)                    │ │
+│  │                                                              │ │
+│  │  SPA Routing: /** → /index.html                             │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│                          │                                         │
+│                          │ HTTPS                                   │
+│                          │                                         │
+│  ┌──────────────┬────────┴─────────┬──────────────┐              │
+│  │              │                  │              │              │
+│  ▼              ▼                  ▼              ▼              │
+│  ┌──────────────────────┐  ┌──────────────────────────────┐     │
+│  │ Cloud Firestore      │  │ Cloud Functions              │     │
+│  │ (NoSQL Database)     │  │ (Node.js 20 Runtime)         │     │
+│  │                      │  │                              │     │
+│  │ Collections:         │  │ Deployed Functions:          │     │
+│  │ • users              │  │ • onExpenseCreated           │     │
+│  │ • trips              │  │ • onExpenseUpdated           │     │
+│  │ • expenses           │  │ • onExpenseDeleted           │     │
+│  │ • members            │  │ • onMemberAdded              │     │
+│  │ • notifications      │  │ • onMemberRemoved            │     │
+│  │ • categories         │  │ • cleanupDeletedAccounts     │     │
+│  │ • currencies         │  │ • dailySyncUsersPhotoURL     │     │
+│  │ • exchangeRates      │  │ • syncAllUsersPhotoURL       │     │
+│  │ • settings           │  │ • healthCheck                │     │
+│  │                      │  │                              │     │
+│  │ Real-time listeners  │  │ Triggers:                    │     │
+│  │ Transactions support │  │ • Firestore events           │     │
+│  │ Security rules       │  │ • Pub/Sub scheduled          │     │
+│  │ Indexes              │  │ • HTTP callable              │     │
+│  └──────────────────────┘  └──────────────────────────────┘     │
+│           │                            │                         │
+│           │            ┌───────────────┘                         │
+│           │            │                                         │
+│           └────────────┼────────────────┐                        │
+│                        │                │                        │
+│                        ▼                ▼                        │
+│                  ┌──────────────────────────────────┐            │
+│                  │     Cloud Storage (Bucket)       │            │
+│                  │  accountingbooks-9fa26.firebasesl│            │
+│                  │                                  │            │
+│                  │ Paths:                           │            │
+│                  │ • /receipts/{tripId}/            │            │
+│                  │ • /trip-covers/{tripId}/         │            │
+│                  │ • /avatars/{userId}/             │            │
+│                  │                                  │            │
+│                  │ Size: ≤ 10MB per file            │            │
+│                  │ Types: JPEG, PNG, HEIC, HEIF    │            │
+│                  │ Rules: Custom access control     │            │
+│                  └──────────────────────────────────┘            │
+│                        │                                         │
+└────────────────────────┼─────────────────────────────────────────┘
+                         │
+            ┌────────────┴────────────┐
+            │                         │
+            ▼                         ▼
+    ┌──────────────────┐    ┌──────────────────┐
+    │ Firebase Auth    │    │ Google OAuth 2.0 │
+    │ (Authentication) │    │ (Login Provider) │
+    │                  │    │                  │
+    │ • Google OAuth   │◄──►│ • User consent   │
+    │ • Token mgmt     │    │ • Profile data   │
+    │ • Session mgmt   │    │ • Photo URL      │
+    └──────────────────┘    └──────────────────┘
+
+================================================================================
+BUILD PIPELINE
+================================================================================
+
+Source Code
+    │
+    ├─ src/app/**/*.ts, *.html, *.scss
+    ├─ functions/src/*.ts
+    └─ Configuration files (*.json, *.rules)
+
+    ▼
+
+Development Build:
+┌────────────────────────────┐
+│ npm start                  │
+│ ng serve --configuration   │
+│ development                │
+└───────────────┬────────────┘
+                │
+                ▼
+        localhost:4200
+
+Production Build:
+┌────────────────────────────┐
+│ npm run build              │
+│ ng build                   │
+└───────────────┬────────────┘
+                │
+                ├─ Angular CLI (@angular/build)
+                ├─ TypeScript Compiler
+                ├─ Tailwind CSS processing
+                ├─ SCSS compilation
+                ├─ Tree shaking & minification
+                ├─ Output hashing
+                └─ Budget checking
+                
+                ▼
+
+Compiled Output:
+    dist/accounting-books/browser/
+    ├─ index.html
+    ├─ main.{hash}.js
+    ├─ runtime.{hash}.js
+    ├─ styles.{hash}.css
+    └─ assets/**
+
+    ▼
+
+Function Compilation:
+┌────────────────────────────┐
+│ functions/                 │
+│ npm run build              │
+│ tsc                        │
+└───────────────┬────────────┘
+                │
+                ▼
+        functions/lib/
+        └─ index.js (compiled)
+
+    ▼
+
+Deployment:
+┌────────────────────────────┐
+│ npx firebase deploy        │
+│                            │
+│ • Hosting                  │
+│ • Cloud Functions          │
+│ • Security Rules           │
+│ • Firestore Indexes        │
+└────────────────────────────┘
+
+================================================================================

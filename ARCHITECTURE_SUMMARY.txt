@@ -1,0 +1,460 @@
+================================================================================
+ACCOUNTINGBOOKS - CODEBASE ARCHITECTURE SUMMARY
+================================================================================
+
+PROJECT TYPE: Full-Stack Cloud-Native Web Application
+PURPOSE: Expense tracking and bill-splitting for group travel
+LANGUAGE: Traditional Chinese (UI) + English (Docs)
+STATUS: Production-Ready
+
+================================================================================
+1. TECHNOLOGY STACK AT A GLANCE
+================================================================================
+
+FRONTEND:
+  Framework:     Angular 21.1.0 (Standalone Components, Signals)
+  Language:      TypeScript 5.9.2 (Strict mode)
+  Styling:       Tailwind CSS 3.4.17 (Soft UI Evolution theme)
+  State Mgmt:    RxJS 7.8.0 (Reactive programming)
+  UI Libraries:  Swiper.js, SweetAlert2, Chart.js, Font Awesome, Hammer.js
+
+BACKEND (Serverless):
+  Platform:      Firebase (Google Cloud)
+  Database:      Cloud Firestore (NoSQL, Real-time)
+  Auth:          Firebase Authentication (Google OAuth)
+  Storage:       Cloud Storage (Receipt images, avatars)
+  Functions:     Cloud Functions (Node.js 20)
+  Hosting:       Firebase Hosting (SPA deployment)
+
+TOOLING:
+  Build:         Angular CLI 21.1.1 (@angular/build)
+  Testing:       Vitest 4.0.8
+  Formatting:    Prettier (100 char width)
+  Deployment:    Firebase CLI 15.3.1
+
+================================================================================
+2. PROJECT STRUCTURE
+================================================================================
+
+src/app/
+  ├── core/                    # Business Logic
+  │   ├── services/            # 14 Services (~6,427 LOC)
+  │   ├── models/              # 10 TypeScript Interfaces
+  │   ├── guards/              # Route Protection (2)
+  │   └── utils/               # Helper Functions
+  │
+  ├── components/              # Reusable UI (8 components)
+  │   ├── account-settings-dialog/
+  │   ├── trip-dialog/
+  │   ├── expense-dialog/
+  │   ├── category-dialog/
+  │   ├── trip-members-dialog/
+  │   ├── user-dialog/
+  │   ├── expense-item/
+  │   └── notification-panel/
+  │
+  ├── pages/                   # Page Components
+  │   ├── login/               # Authentication
+  │   ├── trips/               # Trip Management
+  │   ├── expenses/            # Expense Tracking
+  │   │   ├── search-filter/
+  │   │   └── statistics/
+  │   └── admin/               # Admin Dashboard (7 pages)
+  │
+  ├── layout/
+  │   └── main-layout/         # Global Navigation Shell
+  │
+  ├── app.ts                   # Root Component
+  ├── app.config.ts            # Angular Configuration
+  ├── app.routes.ts            # Route Definitions
+  └── app.scss                 # Global Styles
+
+functions/
+  └── src/index.ts            # Cloud Functions (9 deployed)
+      ├── 5 Firestore Triggers
+      ├── 2 Scheduled Functions
+      ├── 1 HTTP Callable
+      └── 1 Health Check
+
+================================================================================
+3. CORE SERVICES (14 total)
+================================================================================
+
+auth.service.ts              → Firebase authentication & user sessions
+trip.service.ts              → Trip CRUD operations & queries
+expense.service.ts           → Expense tracking & management
+trip-members.service.ts      → Member roles & permissions
+category.service.ts          → Expense categories
+payment-method.service.ts    → Payment methods
+exchange-rate.service.ts     → Currency conversion
+currency.service.ts          → Currency management
+notification.service.ts      → Real-time notifications
+system-settings.service.ts   → Global application settings
+statistics.service.ts        → Analytics & data reporting
+user.service.ts              → User profiles & management
+export.service.ts            → CSV/ZIP data export
+search-filter.service.ts     → Advanced search & filtering
+
+================================================================================
+4. ROUTING & AUTHENTICATION
+================================================================================
+
+Public Routes:
+  /login                      → LoginComponent (unauthenticated)
+
+Protected Routes (authGuard):
+  /                           → MainLayoutComponent
+  /trips                      → TripsComponent
+  /trip/:tripId/expenses      → ExpensesComponent
+
+Admin Routes (adminGuard):
+  /admin/dashboard            → AdminDashboardComponent
+  /admin/trips                → TripManagementComponent
+  /admin/users                → UserManagementComponent
+  /admin/categories           → CategoryManagementComponent
+  /admin/payment-methods      → PaymentMethodManagementComponent
+  /admin/currencies           → CurrenciesComponent
+  /admin/stats                → StatisticsComponent
+
+================================================================================
+5. FIRESTORE DATA MODEL
+================================================================================
+
+Collections:
+  users/                      → User profiles & status
+  trips/                      → Trip documents
+    {tripId}/members/         → Trip members with roles
+    {tripId}/expenses/        → Expense records
+  categories/                 → Expense categories
+  paymentMethods/             → Payment method definitions
+  currencies/                 → Currency information
+  exchangeRates/              → Exchange rate cache
+  notifications/              → User notifications
+  settings/                   → Global application settings
+
+Key Fields & Types:
+  User.status:                'active' | 'inactive'
+  TripMember.role:            'owner' | 'editor' | 'viewer'
+  Expense.amount:             number (with currency)
+  Notification.type:          'expense_*' | 'trip_member_*'
+
+================================================================================
+6. CLOUD FUNCTIONS (9 deployed)
+================================================================================
+
+FIRESTORE TRIGGERS:
+  onExpenseCreated            → Notifies trip members of new expense
+  onExpenseUpdated            → Notifies members of expense changes
+  onExpenseDeleted            → Notifies members of deletion
+  onMemberAdded               → Welcomes new trip member
+  onMemberRemoved             → Notifies remaining members
+
+SCHEDULED (Pub/Sub):
+  cleanupDeletedAccounts      → Daily 00:00 UTC: Remove deleted accounts
+  dailySyncUsersPhotoURL      → Daily 01:00 UTC: Sync avatars from Auth
+
+CALLABLE (HTTP):
+  syncAllUsersPhotoURL        → Manual admin trigger for avatar sync
+
+HEALTH CHECK:
+  healthCheck                 → Returns {status: 'ok', timestamp}
+
+================================================================================
+7. SECURITY MODEL
+================================================================================
+
+AUTHENTICATION:
+  Provider:                   Firebase Auth (Google OAuth)
+  Session:                    browserLocalPersistence (automatic)
+  Token Refresh:              Automatic via Firebase SDK
+
+FIRESTORE RULES (Custom):
+  User Documents:             Only accessible by self/authorized users
+  Trips:                      Members can read/write by role
+  Expenses:                   Role-based access (viewer/editor/owner)
+  Categories/Methods:         Public read, admin write
+  Notifications:              Users see only their own
+  Admin Operations:           isAdmin check enforced
+
+CLOUD STORAGE RULES:
+  /receipts/{tripId}/:        Editor+ can upload ≤10MB (JPEG/PNG/HEIC)
+  /trip-covers/{tripId}/:     Owner only ≤10MB
+  /avatars/{userId}/:         User owns their avatar
+  Allowed Types:              JPEG, PNG, HEIC, HEIF
+  Size Limit:                 10MB per file
+
+================================================================================
+8. KEY ARCHITECTURAL PATTERNS
+================================================================================
+
+REACTIVE PROGRAMMING:
+  - RxJS Observables for data streams
+  - Subjects for state management
+  - Pipe operators for transformations
+  - Auto-unsubscription patterns
+
+STANDALONE COMPONENTS:
+  - No NgModules required
+  - Tree-shakable dependencies
+  - Self-contained components
+
+DEPENDENCY INJECTION:
+  - Service singleton pattern
+  - Constructor injection
+  - Injectable decorator
+
+REAL-TIME FEATURES:
+  - Firestore listeners for live updates
+  - Instant notifications on changes
+  - Live currency exchange rates
+
+DIALOGS & MODALS:
+  - SweetAlert2 for beautiful UI
+  - Reusable dialog components
+  - Form validation inside dialogs
+
+TOUCH & GESTURES:
+  - Hammer.js for swipe to delete
+  - Swiper.js for image carousels
+  - Mobile-friendly interactions
+
+DATA EXPORT:
+  - CSV generation (PapaParse)
+  - ZIP archives (JSZip)
+  - Browser downloads (File-Saver)
+
+================================================================================
+9. BUILD & DEPLOYMENT CONFIGURATION
+================================================================================
+
+ANGULAR BUILD (@angular/build):
+  Development:
+    - Source maps enabled
+    - No optimization
+    - Extracted licenses: false
+  
+  Production:
+    - Budget: 3MB initial, 4KB component style
+    - Output hashing: all
+    - Optimization enabled
+    - Minified bundle
+
+FIREBASE DEPLOYMENT:
+  Hosting:        dist/accounting-books/browser → SPA mode
+  Functions:      functions/ → Node.js 20 runtime
+  Firestore:      firestore.rules → Security rules
+  Storage:        storage.rules → File access control
+
+ENVIRONMENT CONFIG:
+  Development:    Source maps, optional emulators
+  Production:     Real Firebase, optimized bundle
+
+================================================================================
+10. STYLING & DESIGN SYSTEM
+================================================================================
+
+TAILWIND CSS THEME (Soft UI Evolution):
+  Primary Color:              #4fd1c5 (teal)
+  Background:                 #e0e5ec (light blue-gray)
+  Text Color:                 #2d3748 (dark gray)
+  
+  Shadow System (Embossed):
+    - soft:        Large 3D effect
+    - soft-sm:     Small elevation
+    - soft-lg:     Large elevation
+    - soft-xl:     Extra-large elevation
+    - soft-inset:  Pressed button effect
+  
+  Border Radius Extended:
+    - xl:  1rem
+    - 2xl: 1.5rem
+    - 3xl: 2rem
+
+FILES:
+  - 23 SCSS files (component-scoped)
+  - Global styles in src/styles.scss
+  - Autoprefixer for vendor compatibility
+
+================================================================================
+11. CODE STATISTICS
+================================================================================
+
+LINES OF CODE:
+  Frontend TypeScript:        ~6,427 LOC
+  HTML Templates:             23 files
+  SCSS Stylesheets:           23 files
+  Backend Functions:          ~523 LOC
+
+CODE ORGANIZATION:
+  Core Services:              14 services
+  Data Models:                10 interfaces
+  Reusable Components:        8+ components
+  Page Components:            4 main + 7 admin pages
+  Route Guards:               2 (auth, admin)
+  Utility Functions:          2 modules
+
+================================================================================
+12. NPM SCRIPTS & WORKFLOW
+================================================================================
+
+FRONTEND:
+  npm start                   Start dev server (localhost:4200)
+  npm run build               Production build
+  npm run watch               Watch mode for development
+  npm test                    Run unit tests (Vitest)
+
+BACKEND (Functions):
+  npm run build               Compile TypeScript
+  npm run start               Start emulator
+  npm run deploy              Deploy to Firebase
+  npm run logs                View function logs
+
+================================================================================
+13. DEPENDENCIES HEALTH
+================================================================================
+
+LATEST VERSIONS:
+  Angular:                    21.1.0
+  TypeScript:                 5.9.2
+  Firebase SDK:               11.10.0
+  RxJS:                       7.8.0
+  Swiper:                     12.0.3
+  SweetAlert2:                11.26.17
+  Chart.js:                   4.5.1
+  Font Awesome:               7.1.0
+
+PACKAGE MANAGER:
+  npm:                        10.9.2 (locked)
+  Node.js:                    20 (for functions)
+
+SECURITY:
+  All dependencies regularly maintained
+  No known security issues
+  Security patches applied promptly
+
+================================================================================
+14. PERFORMANCE CONSIDERATIONS
+================================================================================
+
+FRONTEND:
+  - Bundle budgets enforced: 3MB initial, 4KB per component style
+  - Production builds optimized and minified
+  - Lazy loading via route-based code splitting
+  - Source maps for debugging
+
+DATABASE:
+  - Firestore indexes for common queries
+  - Denormalization for read efficiency
+  - Real-time listeners only on necessary data
+  - Batch operations for bulk updates
+
+CLOUD FUNCTIONS:
+  - Parallel notifications (Promise.all)
+  - Efficient Firestore queries with WHERE
+  - Scheduled cleanup to maintain health
+  - 9-second timeout handling
+
+CACHING:
+  - Browser localStorage (session persistence)
+  - Exchange rate caching in Firestore
+  - Client-side state with RxJS
+
+================================================================================
+15. KEY FEATURES
+================================================================================
+
+EXPENSE TRACKING:
+  - Create/edit/delete expenses
+  - Multiple currency support (TWD, USD, JPY, etc.)
+  - Category & payment method tags
+  - Receipt image uploads (HEIC support)
+  - Advanced filtering & search
+
+TRIP MANAGEMENT:
+  - Create & organize group trips
+  - Invite members with customizable roles
+  - Real-time member updates
+  - Trip-specific currencies
+
+BILL SPLITTING:
+  - Automatic expense calculations
+  - Currency conversion
+  - Role-based expense visibility
+  - Per-member expense tracking
+
+COLLABORATION:
+  - Real-time notifications
+  - Instant data synchronization
+  - Member role management
+  - Activity history
+
+ANALYTICS:
+  - Pie charts (expense distribution)
+  - Line charts (expense trends)
+  - Category breakdowns
+  - Per-member summaries
+  - Admin system statistics
+
+ADMIN FUNCTIONS:
+  - User management & status control
+  - Trip administration
+  - Category management
+  - Currency & exchange rate control
+  - Payment method configuration
+  - System-wide statistics
+
+DATA MANAGEMENT:
+  - CSV export for spreadsheets
+  - ZIP archive creation
+  - Bulk data operations
+  - Account deletion with cleanup
+  - 7-day deletion grace period
+
+================================================================================
+16. INTERNATIONALIZATION
+================================================================================
+
+CURRENT:
+  UI Language:                Traditional Chinese (繁體中文)
+  Documentation:              English
+  Currency Support:           Multilingual-ready
+
+SUPPORTED CURRENCIES:
+  - TWD (Taiwan Dollar) - Default
+  - USD (US Dollar)
+  - JPY (Japanese Yen)
+  - More via currency administration
+
+================================================================================
+CONCLUSION
+================================================================================
+
+AccountingBooks is a PRODUCTION-READY, ENTERPRISE-GRADE expense management
+system built on modern, scalable, and secure technologies.
+
+KEY STRENGTHS:
+  ✓ Modern Angular 21 with latest features
+  ✓ Real-time Firebase backend
+  ✓ Role-based access control
+  ✓ Mobile-first responsive design
+  ✓ Cloud-native architecture
+  ✓ Type-safe TypeScript development
+  ✓ Comprehensive security rules
+  ✓ Rich interactive features
+  ✓ Automated notifications
+  ✓ Well-organized modular structure
+
+IDEAL USE CASES:
+  - Team expense tracking
+  - Group travel planning
+  - Collaborative bill-splitting
+  - Multi-currency transactions
+  - Real-time team collaboration
+
+DEPLOYMENT:
+  Production: Firebase Hosting + Cloud Services
+  Database: Cloud Firestore (NoSQL, real-time)
+  Backend: Cloud Functions (serverless)
+  Storage: Cloud Storage (images & documents)
+
+================================================================================
