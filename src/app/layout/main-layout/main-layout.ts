@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -41,6 +41,8 @@ export class MainLayoutComponent implements OnInit {
 
   // 帳號設定對話框狀態
   showAccountSettings = signal(false);
+
+  constructor() { }
 
   ngOnInit() {
     console.log('[MainLayout] Initialized, showAccountSettings:', this.showAccountSettings());

@@ -9,6 +9,7 @@ import { provideFirebaseApp } from '@angular/fire/app';
 import { provideAuth } from '@angular/fire/auth';
 import { provideFirestore } from '@angular/fire/firestore';
 import { provideStorage } from '@angular/fire/storage';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -25,6 +26,7 @@ export const appConfig: ApplicationConfig = {
       return auth;
     }),
     provideFirestore(() => getFirestore()),
-    provideStorage(() => getStorage())
+    provideStorage(() => getStorage()),
+    provideCharts(withDefaultRegisterables())
   ]
 };

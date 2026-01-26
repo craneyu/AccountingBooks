@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector, runInInjectionContext } from '@angular/core';
 import { Firestore, collectionData, doc, updateDoc, deleteDoc, query, where, orderBy, limit } from '@angular/fire/firestore';
 import { collection, getDocs } from 'firebase/firestore';
 import { Observable } from 'rxjs';
@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 export class NotificationService {
   private firestore = inject(Firestore);
   private authService = inject(AuthService);
+  private injector = inject(Injector);
 
   /**
    * 訂閱當前使用者的通知（實時更新）
@@ -32,7 +33,9 @@ export class NotificationService {
       limit(limit_count)
     );
 
-    return collectionData(q, { idField: 'id' }) as Observable<Notification[]>;
+    return runInInjectionContext(this.injector, () => {
+      return collectionData(q, { idField: 'id' }) as Observable<Notification[]>;
+    });
   }
 
   /**

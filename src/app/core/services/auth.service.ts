@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed, NgZone } from '@angular/core';
+import { Injectable, inject, signal, computed, NgZone, Injector, runInInjectionContext } from '@angular/core';
 import { Auth, GoogleAuthProvider, signInWithPopup, signOut, user, User as FirebaseUser } from '@angular/fire/auth';
 import { Firestore } from '@angular/fire/firestore';
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, Timestamp, deleteDoc, writeBatch } from 'firebase/firestore';
@@ -17,12 +17,13 @@ export class AuthService {
   private firestore = inject(Firestore);
   private router = inject(Router);
   private zone = inject(NgZone);
+  private injector = inject(Injector);
 
   // 標記是否已經完成初始狀態檢查
   isInitialized$ = new BehaviorSubject<boolean>(false);
   isInitialized = toSignal(this.isInitialized$, { initialValue: false });
 
-  user$ = user(this.auth);
+  user$ = runInInjectionContext(this.injector, () => user(this.auth));
   currentUser = signal<User | null>(null);
   isAdmin = computed(() => this.currentUser()?.isAdmin || false);
 
@@ -150,18 +151,30 @@ export class AuthService {
       const userSnap = await getDoc(userRef);
       const now = Timestamp.now();
 
+      // 基本回傳物件，確保頭像來自 Firebase Auth 最準確
+      const baseUserData = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        photoURL: firebaseUser.photoURL || undefined,
+        displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      };
+
       if (userSnap.exists()) {
-        const userData = userSnap.data() as User;
-        await updateDoc(userRef, {
-          lastLoginAt: now,
-          photoURL: firebaseUser.photoURL || undefined,
-          displayName: firebaseUser.displayName || userData.displayName
-        });
+        const dbData = userSnap.data() as User;
+        try {
+          await updateDoc(userRef, {
+            lastLoginAt: now,
+            photoURL: firebaseUser.photoURL || dbData.photoURL || undefined,
+            displayName: firebaseUser.displayName || dbData.displayName
+          });
+        } catch (updateErr) {
+          console.warn('Update user doc failed (maybe permissions), but continuing:', updateErr);
+        }
+        
         return {
-          ...userData,
-          id: firebaseUser.uid,
-          photoURL: firebaseUser.photoURL || undefined,
-          displayName: firebaseUser.displayName || userData.displayName
+          ...dbData,
+          ...baseUserData, // 覆蓋以確保使用最新的 Auth 資訊
+          photoURL: firebaseUser.photoURL || dbData.photoURL || undefined
         };
       } else {
         const usersRef = collection(this.firestore, 'users');
@@ -182,10 +195,7 @@ export class AuthService {
         }
 
         const newUser: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          photoURL: firebaseUser.photoURL || undefined,
+          ...baseUserData,
           isAdmin: isAdmin,
           status: status,
           createdAt: now,
@@ -194,17 +204,24 @@ export class AuthService {
         };
         await setDoc(userRef, newUser);
 
-        // 同步成員記錄：如果有按 email 建立的成員記錄，更新為使用真實 UID
+        // 同步成員記錄
         await this.migrateMembersByEmail(firebaseUser.uid, firebaseUser.email || '');
-
-        // 修復舊行程缺失的 owner 成員記錄
-        await this.fixMissingOwnerMembers(firebaseUser.uid, firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User', firebaseUser.email || '');
+        await this.fixMissingOwnerMembers(firebaseUser.uid, baseUserData.displayName, firebaseUser.email || '');
 
         return newUser;
       }
     } catch (e) {
       console.error('SyncUser error:', e);
-      return null;
+      // 就算同步失敗，至少回傳 Auth 資訊讓 UI 正常
+      return {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        photoURL: firebaseUser.photoURL || undefined,
+        displayName: firebaseUser.displayName || 'User',
+        isAdmin: false,
+        status: 'active',
+        updatedAt: Timestamp.now()
+      } as User;
     }
   }
 

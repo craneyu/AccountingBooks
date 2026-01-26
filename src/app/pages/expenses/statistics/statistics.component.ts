@@ -17,7 +17,14 @@ import { faChartPie, faChartLine, faChartBar } from '@fortawesome/free-solid-svg
   styleUrl: './statistics.component.scss'
 })
 export class StatisticsComponent implements OnInit {
-  @Input() expenses: Expense[] = [];
+  private _expenses = signal<Expense[]>([]);
+  @Input()
+  set expenses(value: Expense[]) {
+    this._expenses.set(value);
+  }
+  get expenses(): Expense[] {
+    return this._expenses();
+  }
 
   private statisticsService = inject(StatisticsService);
   private currencyService = inject(CurrencyService);
@@ -26,11 +33,11 @@ export class StatisticsComponent implements OnInit {
   currencies = signal<string[]>(['TWD', 'USD', 'JPY', 'EUR', 'KRW', 'CNY', 'THB', 'GBP']);
 
   // Chart data signals
-  categoryStats = computed(() => this.statisticsService.calculateCategoryStats(this.expenses, this.selectedCurrency()));
-  dailyTrend = computed(() => this.statisticsService.calculateDailyTrend(this.expenses, this.selectedCurrency()));
-  memberStats = computed(() => this.statisticsService.calculateMemberStats(this.expenses, this.selectedCurrency()));
-  paymentMethodStats = computed(() => this.statisticsService.calculatePaymentMethodStats(this.expenses, this.selectedCurrency()));
-  summary = computed(() => this.statisticsService.calculateSummary(this.expenses, this.selectedCurrency()));
+  categoryStats = computed(() => this.statisticsService.calculateCategoryStats(this._expenses(), this.selectedCurrency()));
+  dailyTrend = computed(() => this.statisticsService.calculateDailyTrend(this._expenses(), this.selectedCurrency()));
+  memberStats = computed(() => this.statisticsService.calculateMemberStats(this._expenses(), this.selectedCurrency()));
+  paymentMethodStats = computed(() => this.statisticsService.calculatePaymentMethodStats(this._expenses(), this.selectedCurrency()));
+  summary = computed(() => this.statisticsService.calculateSummary(this._expenses(), this.selectedCurrency()));
 
   // Chart configurations
   categoryChartData = computed(() => this.buildCategoryChartData());
@@ -45,7 +52,7 @@ export class StatisticsComponent implements OnInit {
   // Chart options
   pieChartOptions: ChartConfiguration['options'] = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'bottom',
@@ -59,7 +66,7 @@ export class StatisticsComponent implements OnInit {
 
   lineChartOptions: ChartConfiguration['options'] = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: true,
@@ -75,7 +82,7 @@ export class StatisticsComponent implements OnInit {
 
   barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false
