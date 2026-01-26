@@ -1,244 +1,130 @@
-# AccountingBooks (PayState)
+# AccountingBooks (分帳軟體)
 
-旅遊記帳應用程式，採用 Soft UI Evolution 設計風格，提供直觀的支出追蹤與統計功能。
+**AccountingBooks** 是一款專為團體旅遊設計的支出追蹤與分帳應用程式。採用現代化的 **Soft UI Evolution** 設計風格，結合 Angular 與 Firebase 的強大功能，提供直觀、流暢且即時的協作體驗。
 
 ## ✨ 主要功能
 
-- **🔐 身份驗證**：Google 帳號登入（Firebase Authentication）
-- **🗺️ 旅遊主題管理**：建立與管理多個旅遊行程
-- **💰 支出追蹤**：記錄支出並即時貨幣轉換
-- **📊 統計報表**：視覺化支出分析與統計
-- **📸 收據管理**：上傳收據照片，使用 Swiper.js 流暢查看（支援 iOS 滑動）
-- **👥 使用者管理**：管理者可管理使用者權限
-- **🎨 現代化設計**：Soft UI Evolution（柔和介面、高對比度、無障礙設計）
+- **🔐 安全登入**：整合 Firebase Authentication (Google 登入)，確保帳戶安全。
+- **🗺️ 旅程管理**：建立多個旅遊行程，邀請朋友加入並共同編輯。
+- **👥 成員權限**：精細的角色管理系統 (Owner, Editor, Viewer)，保障資料安全。
+- **💰 支出追蹤**：輕鬆記錄每一筆消費，支援自動匯率轉換 (TWD, USD, JPY 等)。
+- **📸 收據雲端**：直接上傳收據照片至 Firebase Storage，支援多圖瀏覽與縮放。
+- **📊 統計分析**：透過直觀的圓餅圖與折線圖，即時掌握支出分佈與趨勢。
+- **📱 響應式設計**：完美適配手機、平板與桌面裝置。
+
+## 🛠️ 技術棧
+
+本專案採用以下技術構建：
+
+### 前端 (Frontend)
+- **Framework**: Angular 19+ (Standalone Components, Signals)
+- **Language**: TypeScript 5.9+
+- **Styling**: Tailwind CSS 3.4 + SCSS (Soft UI Design)
+- **UI Libraries**:
+  - `Swiper.js` (圖片瀏覽)
+  - `SweetAlert2` (互動對話框)
+  - `Font Awesome` (圖標)
+  - `Chart.js` / `ng2-charts` (統計圖表)
+
+### 後端與雲端 (Backend & Cloud)
+- **Platform**: Firebase
+- **Database**: Cloud Firestore (NoSQL, Realtime)
+- **Authentication**: Firebase Auth (Google Provider)
+- **Storage**: Cloud Storage for Firebase (圖片儲存)
+- **Hosting**: Firebase Hosting (靜態網站託管)
+- **Functions**: Cloud Functions for Firebase (後端邏輯與觸發器)
 
 ## 🚀 快速開始
 
 ### 環境需求
+- Node.js 18.19.0 或更高版本
+- npm 10.x 或更高版本
+- Angular CLI (`npm install -g @angular/cli`)
 
-- Node.js 18+
-- npm 10+
-- Firebase 專案
+### 安裝步驟
 
-### 安裝與設定
-
-1. **Install Dependencies**
-
+1. **複製專案**
    ```bash
-   npm install
+   git clone https://github.com/craneyu/AccountingBooks.git
+   cd AccountingBooks
    ```
 
-2. **Configure Firebase**
-   - Create a Firebase project.
-   - Enable Authentication (Google Provider).
-   - Enable Firestore Database.
-   - Copy your Firebase configuration.
-   - Open `src/environments/environment.ts` and paste the config:
-     ```typescript
-     export const environment = {
-       production: false,
-       firebase: {
-         apiKey: '...',
-         authDomain: '...',
-         projectId: '...',
-         storageBucket: '...',
-         messagingSenderId: '...',
-         appId: '...',
-       },
-       // ...
-     };
-     ```
+2. **安裝依賴套件**
+   ```bash
+   npm install
+   # 同時安裝 Cloud Functions 的依賴
+   cd functions && npm install && cd ..
+   ```
 
-3. **Run Application**
+3. **設定環境變數**
+   請在 `src/environments/` 目錄下建立 `environment.ts` 與 `environment.prod.ts`，並填入您的 Firebase 設定資訊：
+   ```typescript
+   export const environment = {
+     production: false, // 生產環境請設為 true
+     firebase: {
+       apiKey: "YOUR_API_KEY",
+       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+       projectId: "YOUR_PROJECT_ID",
+       storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+       messagingSenderId: "...",
+       appId: "..."
+     }
+   };
+   ```
 
+4. **啟動開發伺服器**
    ```bash
    npm start
    ```
+   瀏覽器將自動開啟 `http://localhost:4200`。
 
-   Navigate to `http://localhost:4200`.
+## 🚢 部署指南
 
-4. **Firestore Indexes**
-   - When you access the Trips page, check the browser console.
-   - If a composite index is required (e.g., for sorting trips by date), Firebase SDK will print a link.
-   - Click the link to create the index automatically.
+本專案已設定為使用 Firebase Hosting 進行部署。
 
-## 🛠️ 技術棧
+### 部署至生產環境
 
-### 前端框架
+1. **登入 Firebase**
+   ```bash
+   npx firebase login
+   ```
 
-- **Angular 21+** - Standalone Components, Signals
-- **TypeScript 5.9+** - 型別安全開發
-- **RxJS 7.8** - 響應式程式設計
+2. **建置並部署**
+   此指令會同時建置 Angular 應用程式並部署 Hosting、Functions、Firestore Rules 與 Indexes。
+   ```bash
+   npm run build
+   npx firebase deploy
+   ```
 
-### UI/UX
-
-- **Tailwind CSS 3.4** - 實用優先的 CSS 框架
-- **SCSS** - CSS 預處理器
-- **Font Awesome 7** - 圖示函式庫
-- **SweetAlert2** - 精美的對話框
-- **Swiper 12** - 觸控友善的輪播/相簿元件（iOS 優化）
-
-### 後端服務
-
-- **Firebase Authentication** - Google 登入
-- **Cloud Firestore** - NoSQL 資料庫
-- **Firebase Storage** - 檔案儲存（收據圖片）
-- **Firebase Hosting** - 靜態網站託管
-
-### 開發工具
-
-- **Angular CLI 21** - 專案建構工具
-- **Prettier** - 程式碼格式化
-- **Firebase Tools** - Firebase CLI
-
-### 外部 API
-
-- **ExchangeRate-API** - 即時匯率查詢
-
-## 📱 功能特色
-
-### 收據圖片查看
-
-使用 **Swiper.js** 提供流暢的圖片瀏覽體驗：
-
-- ✅ iOS 原生滑動支援
-- ✅ 左右導航按鈕
-- ✅ 分頁指示器
-- ✅ 鍵盤控制（方向鍵、ESC）
-- ✅ 響應式設計（手機/平板/桌面）
-- ✅ 縮放功能支援
-
-### 即時匯率轉換
-
-- 自動查詢並快取匯率
-- 顯示匯率更新時間
-- 支援手動調整折合金額
-- 離線模式使用快取匯率
-
-### 管理者功能
-
-- 使用者權限管理
-- 旅遊主題 CRUD
-- 類別與支付方式管理
-- 系統設定
-
-## 📦 安裝套件清單
-
+### 僅部署 Hosting (前端更新)
 ```bash
-# Angular 核心
-npm install @angular/core@^21.1.0 @angular/common@^21.1.0 @angular/forms@^21.1.0
-
-# Firebase
-npm install firebase@^11.10.0 @angular/fire@^20.0.1
-
-# UI 元件
-npm install sweetalert2@^11.26.17 swiper@^12.0.3
-
-# Font Awesome
-npm install @fortawesome/angular-fontawesome@^4.0.0 \
-  @fortawesome/fontawesome-svg-core@^7.1.0 \
-  @fortawesome/free-solid-svg-icons@^7.1.0 \
-  @fortawesome/free-regular-svg-icons@^7.1.0 \
-  @fortawesome/free-brands-svg-icons@^7.1.0
-
-# 其他
-npm install crypto-js@^4.2.0 rxjs@~7.8.0
-
-# 開發工具
-npm install -D tailwindcss@^3.4.17 autoprefixer@^10.4.23 postcss@^8.5.6
-npm install -D @types/crypto-js@^4.2.2
-npm install -D firebase-tools@^15.3.1
+npm run build
+npx firebase deploy --only hosting
 ```
 
-## 🔧 專案結構
+### 資料庫索引 (Indexes)
+若您在開發過程中看到 "The query requires an index" 的錯誤，請點擊錯誤訊息中的連結以自動建立索引，或將 `firestore.indexes.json` 部署至雲端：
+```bash
+npx firebase deploy --only firestore:indexes
+```
+
+## 📂 專案結構
 
 ```
 src/
 ├── app/
-│   ├── components/          # 共用元件
-│   │   ├── expense-dialog/  # 支出對話框
-│   │   ├── trip-dialog/     # 旅遊主題對話框
-│   │   ├── user-dialog/     # 使用者對話框
-│   │   └── category-dialog/ # 類別對話框
-│   ├── core/                # 核心功能
-│   │   ├── guards/          # 路由守衛
-│   │   ├── models/          # 資料模型
-│   │   ├── services/        # 服務層
-│   │   └── utils/           # 工具函式
-│   ├── layout/              # 版面配置
-│   │   └── main-layout/     # 主版面
-│   ├── pages/               # 頁面元件
-│   │   ├── admin/           # 管理者頁面
-│   │   ├── expenses/        # 支出頁面
-│   │   ├── login/           # 登入頁面
-│   │   └── trips/           # 旅遊主題頁面
-│   └── environments/        # 環境設定
-├── styles.scss              # 全域樣式
-└── index.html               # HTML 入口
+│   ├── components/      # 共用 UI 元件 (Dialogs, Panels)
+│   ├── core/            # 核心服務 (Services, Models, Guards, Utils)
+│   ├── layout/          # 版面佈局 (Main Layout)
+│   └── pages/           # 頁面路由 (Login, Trips, Expenses, Admin)
+├── assets/              # 靜態資源
+└── styles.scss          # 全域樣式 (Tailwind imports)
+functions/               # Cloud Functions (Backend logic)
+firestore.rules          # 資料庫安全規則
+storage.rules            # 檔案儲存安全規則
 ```
 
-## 🎨 設計系統
+## 🤝 貢獻與授權
 
-### Soft UI Evolution
-
-本專案採用 Soft UI Evolution 設計語言：
-
-- **柔和陰影**：多層次陰影營造深度感
-- **高對比度**：提升可讀性與無障礙性
-- **現代美學**：簡潔、直觀的介面
-- **響應式設計**：手機優先，跨裝置支援
-
-### 配色方案
-
-```scss
---bg-color: #e0e5ec; // 背景色
---text-color: #2d3748; // 文字色
---primary: #4fd1c5; // 主色調
---surface: #e0e5ec; // 卡片表面
-```
-
-## 🚢 部署
-
-### Firebase Hosting
-
-```bash
-# 建構生產版本
-npm run build
-
-# 部署到 Firebase
-firebase deploy
-
-# 僅部署 Hosting
-firebase deploy --only hosting
-```
-
-### 環境變數設定
-
-在 `src/environments/` 中設定：
-
-```typescript
-// environment.ts (開發環境)
-export const environment = {
-  production: false,
-  firebase: {
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_AUTH_DOMAIN',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    appId: 'YOUR_APP_ID',
-  },
-};
-```
-
-## 📄 授權
-
-本專案僅供個人及家庭使用，不開放商業用途。
-
-## 🤝 貢獻
-
-歡迎提交 Issue 或 Pull Request！
-
-## 📞 聯絡資訊
-
-如有問題或建議，請透過 GitHub Issues 聯繫。
+本專案為個人開發作品，歡迎提交 Issue 或 Pull Request 協助改進。
+Licensed under the MIT License.
