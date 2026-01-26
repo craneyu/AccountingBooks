@@ -1,17 +1,17 @@
 <div class="space-y-6 animate-fade-in-up">
-  <div class="flex items-center justify-between mb-8">
-    <h2 class="text-2xl font-bold text-text">我的旅程</h2>
+  <div class="flex items-center justify-between mb-6 md:mb-8">
+    <h2 class="text-lg md:text-2xl font-bold text-text truncate mr-2">我的旅程</h2>
 
-    <div class="flex gap-3">
+    <div class="flex gap-2 md:gap-3 flex-shrink-0">
       @if (isAdmin()) {
-        <a routerLink="/admin/dashboard" class="soft-btn bg-white text-text-light hover:text-primary shadow-soft-sm flex items-center gap-2">
+        <a routerLink="/admin/dashboard" class="soft-btn bg-white text-text-light hover:text-primary shadow-soft-sm flex items-center gap-2 !px-3 md:!px-6 !py-2 md:!py-3" title="管理後台">
           <fa-icon [icon]="faTools"></fa-icon>
-          <span>管理後台</span>
+          <span class="hidden sm:inline">管理後台</span>
         </a>
       }
-      <button (click)="openAddTrip()" class="soft-btn soft-btn-primary flex items-center gap-2">
+      <button (click)="openAddTrip()" class="soft-btn soft-btn-primary flex items-center gap-2 !px-3 md:!px-6 !py-2 md:!py-3" title="新增旅程">
         <fa-icon [icon]="faPlus"></fa-icon>
-        <span>新增旅程</span>
+        <span class="hidden sm:inline">新增旅程</span>
       </button>
     </div>
   </div>
