@@ -8,7 +8,7 @@
 - **🗺️ 旅程管理**：建立多個旅遊行程，邀請朋友加入並共同編輯。
 - **👥 成員權限**：精細的角色管理系統 (Owner, Editor, Viewer)，保障資料安全。
 - **💰 支出追蹤**：輕鬆記錄每一筆消費，支援自動匯率轉換 (TWD, USD, JPY 等)。
-- **📸 收據雲端**：直接上傳收據照片至 Firebase Storage，支援多圖瀏覽與縮放。
+- **📸 收據雲端**：直接上傳收據照片至 Firebase Storage，整合 **Swiper.js** 支援多圖瀏覽、流暢滑動與縮放。
 - **📊 統計分析**：透過直觀的圓餅圖與折線圖，即時掌握支出分佈與趨勢。
 - **📱 響應式設計**：完美適配手機、平板與桌面裝置。
 
@@ -21,10 +21,11 @@
 - **Language**: TypeScript 5.9+
 - **Styling**: Tailwind CSS 3.4 + SCSS (Soft UI Design)
 - **UI Libraries**:
-  - `Swiper.js` (圖片瀏覽)
-  - `SweetAlert2` (互動對話框)
-  - `Font Awesome` (圖標)
-  - `Chart.js` / `ng2-charts` (統計圖表)
+  - `Swiper.js 12` (流暢的收據圖片瀏覽與相簿功能)
+  - `SweetAlert2` (精美的互動對話框與圖片彈窗容器)
+  - `Hammer.js` (支援行動端清單項目的滑動手勢操作)
+  - `Font Awesome` (豐富的系統圖標)
+  - `Chart.js` / `ng2-charts` (專業的支出統計圖表)
 
 ### 後端與雲端 (Backend & Cloud)
 - **Platform**: Firebase
