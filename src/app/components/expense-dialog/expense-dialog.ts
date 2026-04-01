@@ -292,7 +292,7 @@ export class ExpenseDialogComponent implements OnInit, OnChanges {
       const path = `receipts/${this.tripId}/${new Date().getTime()}_${Math.random().toString(36).substring(7)}_${fileName}.jpg`;
 
       const storageRef = ref(this.storage, path);
-      const result = await uploadBytes(storageRef, compressedBlob);
+      const result = await uploadBytes(storageRef, compressedBlob, { contentType: 'image/jpeg' });
       const url = await getDownloadURL(result.ref);
       return { url };
     } catch (error) {

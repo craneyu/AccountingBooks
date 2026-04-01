@@ -73,7 +73,12 @@ service cloud.firestore {
 
       match /members/{memberId} {
         allow read: if isAuthorizedUser() && isTripMember(tripId);
-        allow create, update, delete: if isAuthorizedUser() && isTripMember(tripId) && getTripMemberRole(tripId) == 'owner';
+        // 建立成員：owner 可新增，或旅程建立者可新增第一個成員（自己）
+        allow create: if isAuthorizedUser()
+                      && ((isTripMember(tripId) && getTripMemberRole(tripId) == 'owner')
+                          || (request.auth.uid == get(/databases/$(database)/documents/trips/$(tripId)).data.createdBy
+                              && request.auth.uid == memberId));
+        allow update, delete: if isAuthorizedUser() && isTripMember(tripId) && getTripMemberRole(tripId) == 'owner';
       }
 
       match /expenses/{expenseId} {

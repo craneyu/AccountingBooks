@@ -10,7 +10,7 @@ import { faMapMarkedAlt, faCalendarAlt, faSuitcaseRolling, faPlus, faEdit, faTra
 import { TripDialogComponent } from '../../components/trip-dialog/trip-dialog';
 import { TripMembersDialogComponent } from '../../components/trip-members-dialog/trip-members-dialog';
 import { switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of, combineLatest } from 'rxjs';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -25,25 +25,10 @@ export class TripsComponent {
   membersService = inject(TripMembersService);
   authService = inject(AuthService);
 
-  // 取得經過授權檢查的行程列表
-  trips$ = this.authService.user$.pipe(
-    switchMap(user => {
+  // 取得經過授權檢查的行程列表（結合 refresh$ 以便新增/編輯/刪除後重新取得）
+  trips$ = combineLatest([this.authService.user$, this.tripService.refresh$]).pipe(
+    switchMap(([user]) => {
       if (!user) return of([]);
-      
-      // 如果是 Admin，顯示所有行程 (TODO: 分頁或過濾)
-      // 但目前 TripService.getAllTrips 也會被 Rules 擋住 (如果它沒權限)
-      // 這裡我們假設 Admin 應該用不同的方式管理，或者暫時都用 getTripsForUser
-      // 為了簡化，先讓所有人都只看到自己的行程。Admin 若要管理所有行程，應在 Admin Dashboard。
-      // 
-      // 不過如果使用者是 Admin，getTripsForUser 只會回傳他參與的。
-      // 我們可以暫時讓 Admin 用 getAllTrips (如果規則允許 Admin 讀取全部)
-      
-      // 檢查是否為 Admin
-      // 注意: authService.isAdmin 是一個 computed signal，這裡用 user 物件判斷較直接
-      // 由於 authService.currentUser 可能還沒更新，我們依賴 user$
-      // 但我們沒有 user.isAdmin 欄位在 FirebaseUser 上。
-      // 我們需要查 User Doc。
-      // 但為了效能，我們直接呼叫 getTripsForUser，這對所有人都適用且安全。
       return this.tripService.getTripsForUser(user.uid);
     })
   );
@@ -130,6 +115,7 @@ export class TripsComponent {
     if (result.isConfirmed) {
       try {
         await this.tripService.deleteTrip(trip.id!);
+        this.tripService.triggerRefresh();
         Swal.fire('已刪除！', '旅程已刪除。', 'success');
       } catch (error) {
         console.error(error);
@@ -141,11 +127,13 @@ export class TripsComponent {
   closeTripDialog() {
     this.showTripDialog.set(false);
     this.selectedTrip.set(null);
+    this.tripService.triggerRefresh();
   }
 
   closeMembersDialog() {
     this.showMembersDialog.set(false);
     this.selectedTrip.set(null);
+    this.tripService.triggerRefresh();
   }
 
   async canEditTrip(trip: Trip): Promise<boolean> {

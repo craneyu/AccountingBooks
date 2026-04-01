@@ -2,7 +2,7 @@ import { Injectable, inject, Injector, runInInjectionContext } from '@angular/co
 import { Firestore, collectionData, docData, collectionGroup } from '@angular/fire/firestore';
 import { collection, query, where, orderBy, doc, addDoc, updateDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { Trip } from '../models/trip.model';
-import { Observable, from, of, forkJoin } from 'rxjs';
+import { Observable, from, of, forkJoin, BehaviorSubject } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
 @Injectable({
@@ -11,6 +11,17 @@ import { map, switchMap } from 'rxjs/operators';
 export class TripService {
   private firestore = inject(Firestore);
   private injector = inject(Injector);
+
+  private refreshTrigger$ = new BehaviorSubject<void>(undefined);
+
+  /** 通知旅程列表重新取得資料 */
+  triggerRefresh() {
+    this.refreshTrigger$.next();
+  }
+
+  get refresh$() {
+    return this.refreshTrigger$.asObservable();
+  }
 
   getAllTrips(): Observable<Trip[]> {
     const tripsRef = collection(this.firestore, 'trips');

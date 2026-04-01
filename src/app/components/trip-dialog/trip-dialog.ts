@@ -92,7 +92,7 @@ export class TripDialogComponent {
         const path = `trip-covers/${tripId}/${new Date().getTime()}_${fileName}.jpg`;
 
         const storageRef = ref(this.storage, path);
-        const result = await uploadBytes(storageRef, compressedBlob);
+        const result = await uploadBytes(storageRef, compressedBlob, { contentType: 'image/jpeg' });
         return await getDownloadURL(result.ref);
     } catch (error) {
         console.error('Upload failed', error);

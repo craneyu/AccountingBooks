@@ -59,8 +59,9 @@ export class AuthService {
   async loginWithGoogle() {
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
       this.auth.languageCode = 'zh-TW';
-      
+
       // 統一使用 Popup，這是目前最穩定的方式
       const result = await signInWithPopup(this.auth, provider);
       if (result.user) {
