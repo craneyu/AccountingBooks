@@ -82,16 +82,15 @@ export class TripDialogComponent {
     }
   }
 
-  async uploadFile(): Promise<string | null> {
+  async uploadFile(tripId: string): Promise<string | null> {
     if (!this.selectedFile) return null;
     try {
         // Compress image before upload (Max 1280px for covers, 0.8 quality)
         const compressedBlob = await compressImage(this.selectedFile, 1280, 1280, 0.8);
-        
+
         const fileName = this.selectedFile.name.substring(0, this.selectedFile.name.lastIndexOf('.')) || this.selectedFile.name;
-        // Use a generic 'covers' folder or trip-specific if ID exists, but safe to use timestamp
-        const path = `covers/${new Date().getTime()}_${fileName}.jpg`;
-        
+        const path = `trip-covers/${tripId}/${new Date().getTime()}_${fileName}.jpg`;
+
         const storageRef = ref(this.storage, path);
         const result = await uploadBytes(storageRef, compressedBlob);
         return await getDownloadURL(result.ref);
@@ -108,15 +107,6 @@ export class TripDialogComponent {
     try {
       const formVal = this.form.value;
       const user = this.authService.currentUser();
-      
-      // Upload image if selected
-      let imageUrl = formVal.coverImage;
-      if (this.selectedFile) {
-        this.uploading = true;
-        const url = await this.uploadFile();
-        if (url) imageUrl = url;
-        this.uploading = false;
-      }
 
       const tripData: any = {
         name: formVal.name,
@@ -124,20 +114,27 @@ export class TripDialogComponent {
         startDate: Timestamp.fromDate(new Date(formVal.startDate)),
         endDate: Timestamp.fromDate(new Date(formVal.endDate)),
         currency: formVal.currency,
-        coverImage: imageUrl || null,
+        coverImage: formVal.coverImage || null,
         status: formVal.status,
         updatedAt: Timestamp.now()
       };
 
       if (this.trip) {
+        // 編輯模式：已有 tripId，可直接上傳封面
+        if (this.selectedFile) {
+          this.uploading = true;
+          const url = await this.uploadFile(this.trip.id!);
+          if (url) tripData.coverImage = url;
+          this.uploading = false;
+        }
         await this.tripService.updateTrip(this.trip.id!, tripData);
       } else {
+        // 新建模式：先建立旅程和成員，再上傳封面
         tripData.createdAt = Timestamp.now();
         tripData.createdBy = user?.id;
         tripData.ownerId = user?.id;
         tripData.memberCount = 1;
 
-        // 新增旅程時獲得新建立旅程的 ID
         const docRef = await this.tripService.addTrip(tripData);
 
         // 為建立者自動建立 owner member
@@ -149,6 +146,16 @@ export class TripDialogComponent {
             joinedAt: Timestamp.now(),
             addedBy: user.id
           });
+
+          // 成員建立後才上傳封面（Storage rules 需要驗證成員身份）
+          if (this.selectedFile) {
+            this.uploading = true;
+            const url = await this.uploadFile(docRef.id);
+            if (url) {
+              await this.tripService.updateTrip(docRef.id, { coverImage: url });
+            }
+            this.uploading = false;
+          }
         }
       }
       this.close.emit();

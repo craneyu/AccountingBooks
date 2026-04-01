@@ -9,14 +9,14 @@ service firebase.storage {
     // 授權使用者檢查
     function isAuthorizedUser() {
       return isAuthenticated()
-        && exists(/databases/default/documents/users/$(request.auth.uid))
-        && get(/databases/default/documents/users/$(request.auth.uid)).data.status == 'active';
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
     // 系統管理者檢查
     function isSystemAdmin() {
       return isAuthorizedUser()
-        && get(/databases/default/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     // 檢查檔案大小限制
@@ -38,15 +38,15 @@ service firebase.storage {
     match /receipts/{tripId}/{allPaths=**} {
       // 認證使用者可讀取自己有權限的旅程收據
       allow read: if isAuthorizedUser()
-                  && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid));
+                  && firestore.exists(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid));
 
       // 系統管理員可讀取所有收據
       allow read: if isSystemAdmin();
 
       // 有編輯權限的成員可上傳收據
       allow write: if isAuthorizedUser()
-                   && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid))
-                   && (get(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role in ['owner', 'editor'])
+                   && firestore.exists(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid))
+                   && (firestore.get(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role in ['owner', 'editor'])
                    && isValidSize()
                    && isValidContentType();
     }
@@ -55,15 +55,15 @@ service firebase.storage {
     match /trip-covers/{tripId}/{allPaths=**} {
       // 認證使用者可讀取自己有權限的旅程封面
       allow read: if isAuthorizedUser()
-                  && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid));
+                  && firestore.exists(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid));
 
       // 系統管理員可讀取所有封面
       allow read: if isSystemAdmin();
 
       // 旅程 owner 可上傳或修改封面
       allow write: if isAuthorizedUser()
-                   && exists(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid))
-                   && get(/databases/default/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role == 'owner'
+                   && firestore.exists(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid))
+                   && firestore.get(/databases/(default)/documents/trips/$(tripId)/members/$(request.auth.uid)).data.role == 'owner'
                    && isValidSize()
                    && isValidContentType();
     }
