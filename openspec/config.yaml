@@ -1,0 +1,170 @@
+schema: spec-driven
+
+context: |
+  ## 專案概覽
+  AccountingBooks 是一套團體旅行記帳與分帳的全端 Web 應用程式，採用 Angular 21 + Firebase（BaaS）架構，部署於 Firebase Hosting，網址為 accountingbooks-9fa26.web.app。
+
+  ## 技術棧
+  前端：Angular 21.1.0、TypeScript 5.9.2（strict mode）、RxJS 7.8.0
+  樣式：Tailwind CSS 3.4.17 + PostCSS 8.5.6 + 元件級 SCSS
+  狀態管理：Angular Signals + RxJS BehaviorSubject（Firestore 即時監聽轉 Signal）
+  元件風格：100% Standalone Components（standalone: true）
+  路由：靜態路由陣列（app.routes.ts）+ authGuard / adminGuard 函式守衛
+  Build 工具：@angular/build 21.1.1（esbuild-based）
+  測試：Vitest 4.0.8 + JSDOM 27.1.0，執行指令 npm test
+  主要套件：
+  - @angular/fire 20.0.1（Firebase SDK 整合）
+  - firebase 11.10.0（Client SDK）
+  - Swiper 12.0.3（收據圖片輪播與滑動手勢）
+  - SweetAlert2 11.26.17（模態對話框與圖片彈窗）
+  - Hammer.js 2.0.8（行動端觸控手勢）
+  - Chart.js 4.5.1 + ng2-charts 8.0.0（統計圖表）
+  - @fortawesome/angular-fontawesome 4.0.0 / Font Awesome 7.1.0（圖示系統）
+  - heic2any 0.0.4（HEIC 轉 JPEG）
+  - JSZip 3.10.1 + PapaParse 5.5.3 + FileSaver 2.0.5（CSV/ZIP 匯出）
+  - crypto-js 4.2.0（加密工具）
+
+  後端（BaaS）：Firebase（firebase-functions 5.0.0 + firebase-admin 12.0.0）
+  - 執行環境：Node.js 20、TypeScript 5.3.3
+  - 認證：Firebase Authentication（僅 Google 登入，signInWithPopup）
+  - 資料庫：Cloud Firestore（persistentLocalCache 離線持久化）
+  - 檔案儲存：Firebase Storage（收據圖片、旅程封面、頭像）
+  - Cloud Functions：9 支函式（5 Firestore 觸發、2 排程、1 Callable、1 HTTP）
+  - 部署：Firebase Hosting → accountingbooks-9fa26.web.app
+
+  ## 專案結構
+  關鍵目錄：
+  src/app/core/services/    — 14 支核心 singleton 服務（auth, trip, expense, notification 等）
+  src/app/core/models/      — 10 個 TypeScript 介面（User, Trip, Expense 等）
+  src/app/core/guards/      — 路由守衛（auth.guard.ts, admin.guard.ts）
+  src/app/components/       — 8 個共用 UI 元件（對話框、面板、清單項目）
+  src/app/pages/            — 12 個路由頁面元件（Login, Trips, Expenses, Admin 系列）
+  src/app/layout/           — 佈局包裝元件（MainLayout 含 header/sidebar）
+  functions/src/            — Cloud Functions 原始碼（index.ts）
+
+  關鍵檔案：
+  - src/app/app.routes.ts       — 路由定義（含守衛設定）
+  - src/app/app.config.ts       — Angular 應用程式組態（providers）
+  - firestore.rules             — Firestore 安全規則（RBAC 角色驗證）
+  - storage.rules               — Storage 安全規則（檔案大小與類型限制）
+  - firebase.json               — Firebase 部署組態
+  - functions/src/index.ts      — 所有 Cloud Functions 定義
+
+  ## Firestore 資料模型
+  users/{userId}                           — displayName, email, photoURL, isAdmin: boolean, status: active|inactive, deleteRequestedAt?, createdAt, updatedAt
+  trips/{tripId}                           — name, description, startDate, endDate, createdBy, ownerId, status, currency, coverImage?, memberCount?, createdAt, updatedAt
+  trips/{tripId}/members/{userId}          — userId, displayName, email, role: owner|editor|viewer, addedBy, joinedAt
+  trips/{tripId}/expenses/{expenseId}      — item, amount, currency, exchangeRate, amountInTWD, category, paymentMethod, expenseDate, receiptImageUrls[], note?, submittedBy, submittedByName, participants[], createdAt, updatedAt
+  categories/{categoryId}                  — name, icon（Font Awesome class）, order, isActive
+  paymentMethods/{methodId}                — name, icon, order, isActive
+  currencies/{currencyId}                  — code, name, symbol, isActive, order
+  exchangeRates/{rateId}                   — from, to, rate, updatedAt
+  notifications/{notificationId}           — userId, type, tripId, tripName, relatedId, message, isRead, createdAt, actorId, actorName
+  settings/{settingId}                     — 全域系統設定
+
+  ## 主要功能模組
+  旅程管理     — 建立/編輯/刪除旅程，設定起訖日期與封面圖片
+  成員管理     — 邀請成員加入旅程，設定角色（Owner/Editor/Viewer）
+  費用記帳     — 新增/編輯/刪除費用，支援多幣別、收據照片、分攤人選擇
+  多幣別換算   — 幣別管理與即時匯率轉換（含快取機制）
+  收據管理     — 多張收據上傳（支援 HEIC 轉換）、圖片輪播瀏覽、縮放
+  統計分析     — 費用統計圖表（Chart.js）、依類別/成員/幣別分析
+  資料匯出     — CSV 單檔匯出或 ZIP 打包匯出
+  即時通知     — Cloud Functions 觸發 + Firestore 監聽的即時通知系統
+  後台管理     — 使用者管理、類別管理、付款方式管理、幣別管理、系統統計
+
+  ## 編碼規範
+  - TypeScript 嚴格模式全開（strict, noImplicitOverride, noImplicitReturns, noFallthroughCasesInSwitch）
+  - Angular 編譯器嚴格模式（strictTemplates, strictInjectionParameters, strictInputAccessModifiers）
+  - 所有元件使用 Standalone 模式，不使用 NgModule
+  - 依賴注入使用 inject() 函式，不使用建構子注入
+  - 縮排：2 spaces，字元集：UTF-8，末尾換行：true
+  - Prettier：printWidth 100、singleQuote true、Angular parser（.html）
+  - 測試檔案與元件/服務共置（*.spec.ts）
+
+  ## 認證與授權
+  認證方式：Firebase Authentication — 僅 Google 登入（signInWithPopup + GoogleAuthProvider）
+  守衛：authGuard（保護所有需登入路由）、adminGuard（保護 /admin/* 路由）
+  受保護路由：/trips、/trip/:tripId/expenses、/admin/*
+  公開路由：/login
+  授權模型：RBAC（Role-Based Access Control）
+  - Owner — 完整控制（CRUD 成員、費用、旅程設定）
+  - Editor — 建立/編輯/刪除費用，讀取成員
+  - Viewer — 唯讀存取旅程與費用
+  - System Admin — isAdmin: true，存取所有後台功能與全域資料
+  安全規則：Firestore rules + Storage rules 於伺服器端強制執行角色驗證
+
+  ## 設計規範
+  設計系統：Soft UI Evolution
+  主色系：primary #4fd1c5（主要操作）、primary-dark #319795（hover 狀態）、secondary #a0aec0（次要元素）
+  陰影：soft 系列（soft-sm, soft, soft-lg, soft-xl, soft-inset）— 柔和立體感
+  圓角：xl / 2xl / 3xl 自訂斷點
+  樣式工具：Tailwind CSS utility-first + 元件級 SCSS（共 22 個 .scss 檔案）
+  行動優先：Mobile-first responsive design
+
+  ## Bundle 大小限制
+  Initial bundle 警告：3MB，錯誤：5MB
+  元件樣式警告：4kB，錯誤：8kB
+
+  ## Commit 規範
+  格式：Conventional Commits 變體 — type: 描述（正體中文）
+  語言：正體中文
+  主分支：main
+  常用類型：feat（新功能）、fix（修復）、Docs（文件）、UI（介面調整）
+  scope 慣例：服務名稱或元件名稱，如 fix(user.service): 修復...
+  Co-Author：Claude Code 協作時加上 Co-Authored-By 標記
+
+  ## 常用指令
+  npm start                                — 啟動開發伺服器（localhost:4200）
+  npm run build                            — 生產環境建置（dist/accounting-books/browser）
+  npm test                                 — 執行 Vitest 測試
+  cd functions && npm run build            — 編譯 Cloud Functions
+  cd functions && npm start                — 啟動 Firebase 模擬器
+  npx firebase deploy                      — 完整部署（Hosting + Functions + Rules）
+  npx firebase deploy --only hosting       — 僅部署前端
+  npx firebase deploy --only functions     — 僅部署 Cloud Functions
+  npx firebase deploy --only firestore:rules — 僅部署 Firestore 安全規則
+
+rules:
+  proposal:
+    - 必須包含「動機與背景」、「方案描述」、「Non-goals（不做什麼）」三個段落
+    - 涉及 Firestore 資料結構變更時，須說明 collection/subcollection 路徑、欄位類型、索引需求
+    - 涉及安全規則變更時，須列出受影響的角色（Owner/Editor/Viewer/Admin）與對應的讀寫權限變化
+    - "新增第三方套件須評估 bundle 大小影響（initial bundle 上限 3MB），並說明是否需要懶載入"
+    - 涉及 Cloud Functions 變更時，須說明觸發條件、通知邏輯、與前端即時更新的連動方式
+    - 涉及 UI 變更須說明符合 Soft UI Evolution 設計系統的具體做法（色系、陰影、圓角）
+    - 涉及多幣別功能時，須考慮匯率快取策略與 amountInTWD 換算邏輯
+    - 提案以正體中文撰寫，技術術語保留英文原文
+
+  specs:
+    - 每份 spec 對應單一功能模組或 service，範圍不應跨越多個 feature
+    - 資料模型定義須使用 TypeScript interface 格式，標明欄位類型與 Firestore Timestamp
+    - "Firestore 路徑以完整格式標示：trips/{tripId}/expenses/{expenseId}"
+    - "列舉值須明確列出所有選項，如 role: 'owner' | 'editor' | 'viewer'"
+    - 涉及認證邊界時，須說明哪些操作需要登入、哪些需要特定角色、哪些公開
+    - Cloud Functions 的 spec 須包含觸發事件類型、輸入資料結構、輸出通知格式
+    - spec 使用正體中文撰寫，技術術語保留英文原文
+    - 檔案上傳相關 spec 須標明大小限制（10MB）與允許的 MIME 類型
+
+  designs:
+    - "視覺風格遵循 Soft UI Evolution 設計系統：primary #4fd1c5、primary-dark #319795、soft 系列陰影"
+    - 互動狀態（hover / active / disabled / loading）須明確描述樣式變化
+    - 優先使用 Tailwind CSS utility class，元件級樣式使用 SCSS，禁止新增全域 class
+    - "元件樣式檔案大小不超過 4kB（警告）/ 8kB（錯誤）"
+    - 響應式設計以 mobile-first 為原則，須說明手機 / 平板 / 桌面三個斷點的排版差異
+    - 新增圖示優先使用 Font Awesome 7.1（@fortawesome/angular-fontawesome），不引入額外圖示套件
+    - 清單項目須支援行動端滑動手勢操作（Hammer.js）
+    - 圖片瀏覽使用 Swiper.js 輪播元件，支援縮放與滑動切換
+    - 對話框與確認提示使用 SweetAlert2，保持全站一致的互動體驗
+
+  tasks:
+    - 每個 task 以單一可驗收的功能或修改為單位，避免過大的範圍
+    - "元件必須使用 Standalone 模式（standalone: true），不建立 NgModule"
+    - 依賴注入使用 inject() 函式，不使用 constructor 注入
+    - "狀態管理優先使用 Angular Signals，Firestore 即時資料使用 RxJS → toSignal() 轉換"
+    - 服務層封裝所有 Firestore 操作，元件不直接操作資料庫
+    - "Firestore 子集合操作必須傳入 tripId：如 ExpenseService.getExpenses(tripId)"
+    - "新增或修改安全規則後須同步更新 firestore.rules 與 storage.rules，並以 npx firebase deploy --only firestore:rules 部署驗證"
+    - 完成後執行 npm run build 確認 bundle 大小未超過 3MB initial 限制
+    - "Commit 訊息使用 type: 描述 格式，以正體中文描述變更內容"
+    - 測試檔案與元件/服務共置，檔名為 *.spec.ts
